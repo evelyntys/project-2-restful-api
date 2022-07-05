@@ -14,7 +14,7 @@ app.use(cors());
 async function main() {
     let db = await MongoUtil.connect(MONGOURI, 'tattoo_API');
 
-    // CREATE
+    // CREATE MAIN
     app.post('/add-new-artist', async function (req, res) {
         let name = req.body.name;
         let gender = req.body.gender;
@@ -113,7 +113,7 @@ async function main() {
 
     })
 
-    // READ
+    // READ MAIN
     app.get('/show-artists', async function (req, res) {
         let criteria = {};
 
@@ -147,7 +147,7 @@ async function main() {
     })
 
 
-    // UPDATE
+    // UPDATE MAIN
     app.put('/tattoo-artist/:id', async function (req, res) {
         let name = req.body.name;
         let gender = req.body.gender;
@@ -224,6 +224,7 @@ async function main() {
         
     })
 
+    //DELETE MAIN
     app.delete('/tattoo-artist/:id', async function (req, res) {
         let results = await db.collection('tattoo_artists').deleteOne({
             _id: ObjectId(req.params.id)
@@ -234,8 +235,34 @@ async function main() {
         })
     })
 
-}
 
+    //CREATE REVIEW
+    app.post('/tattoo-artist/:id/add-review', async function(req,res){
+        let artistID = req.params.id
+        let reviewer = req.body.reviewer;
+        let rating = req.body.rating;
+        let comment = req.body.comment;
+        let response = await db.collection('tattoo_artists').updateOne({
+            _id: ObjectId(artistID)
+        }, {
+            $push: {
+                reviews: {
+                    _id: new ObjectId(),
+                    reviewer: reviewer,
+                    rating: rating,
+                    comment: comment
+                }
+            }
+        })
+        console.log(await db.collection('tattoo_artists').findOne({
+            _id: artistID
+        }))
+        console.log(response)
+        res.send('review successfully uploaded')
+    })
+
+
+}
 main();
 
 app.get('/', function (req, res) {
