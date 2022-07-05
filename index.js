@@ -261,7 +261,7 @@ async function main() {
         res.send('review successfully uploaded')
     })
 
-    //READ REVIEW
+    //READ REVIEWS
     app.get('/tattoo-artist/:id', async function(req,res){
         let artistID = req.params.id
         let artist = await db.collection('tattoo_artists').findOne({
@@ -270,10 +270,67 @@ async function main() {
         res.send(artist.reviews)
     })
 
+    //READ SINGLE REVIEW
+    app.get('/reviews/:reviewid/edit', async function(req,res){
+        let result = await db.collection('tattoo_artists').findOne({
+            'reviews._id': ObjectId(req.params.reviewid)
+        }, {
+            projection: {
+                'reviews':{
+                    $elemMatch: {
+                        _id: ObjectId(req.params.reviewid)
+                    }
+                }
+            }
+        });
+        let wantedReview = result.reviews[0];
+        res.send(wantedReview)
+    })
+
     //UPDATE REVIEW
+    app.post('/reviews/:reviewid/edit', async function(req,res){
+        let result = await db.collection('tattoo_artists').findOne({
+            'reviews._id': ObjectId(req.params.reviewid)
+        });
+       let updated = await db.collection('tattoo_artists').updateOne({
+            'reviews._id': ObjectId(req.params.reviewid)
+        }, {
+            $set: {
+                'reviews.$.comment': req.body.comment
+            }
+        })
+        console.log(updated);
+        let updatedResult = await db.collection('tattoo_artists').findOne({
+            'reviews._id': ObjectId(updatedResult._id)}, {
+                projection: {
+                    'reviews':{
+                        $elemMatch: {
+                            _id: ObjectId(req.params.reviewid)
+                        }
+                    }
+                }
+        })
+        res.send(updatedResult)
+    })
+
 
     //DELETE REVIEW
-
+    app.get('/reviews/:reviewid/delete', async function(req,res){
+        let result = await db.collection('tattoo_artists').findOne({
+            'reviews._id': ObjectId(req.params.reviewid)
+        });
+        console.log(result)
+        await db.collection('tattoo_artists').updateOne({
+            _id: ObjectId(result._id)
+        }, {
+            $pull: {
+                'reviews': {
+                    _id: ObjectId(req.params.reviewid)
+                }
+            }
+        })
+        res.send('delete')
+    })
 
 }
 main();
