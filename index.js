@@ -99,7 +99,7 @@ async function main() {
                 style: style,
                 ink: ink,
                 contact: contact,
-                studio: studio,
+                studio: [studio],
             });
             res.status(200);
             res.send(result);
@@ -117,7 +117,7 @@ async function main() {
     app.get('/show-artists', async function (req, res) {
         let criteria = {};
 
-        // to change req.BODY
+        // to change to req.BODY
         if (req.query.name) {
             criteria['name'] = {
                 $regex: req.query.name,
@@ -158,12 +158,42 @@ async function main() {
         let ink = req.body.ink;
         let contact = req.body.contact;
         let studio = req.body.studio;
-        let originalArtist = await db.collection('tattoo_artists').findOne({
+        let artist = await db.collection('tattoo_artists').findOne({
             _id: ObjectId(req.params.id),
         });
-        console.log(originalArtist)
-        let originalStudio = originalArtist.studio[0]['_id']
-        console.log(originalStudio)
+        let originalStudioID = artist.studio[0]['_id'];
+
+        //update studio data
+        //find the original studio document
+        //update
+        try{
+            let updated = await db.collection('studio_data').updateOne({
+                    _id: ObjectId(originalStudioID)
+                },
+                    {
+                        '$set': {
+                            name: studio[0].name,
+                            private: studio[0].private,
+                            address: {
+                                street: studio[0]['address']['street'],
+                                unit: studio[0]['address']['unit'],
+                                postal: parseInt(studio[0]['address']['postal'])
+                            },
+                            bookingsRequired: studio[0].bookingsRequired,
+                            otherServices: studio[0].otherServices
+                        }
+                    })
+                console.log(updated)
+
+            } catch (e) {
+                res.send('error')
+                console.log(e);
+            }
+
+            studio = await db.collection('studio_data').findOne({
+                _id: ObjectId(originalStudioID)
+            })
+
         try {
             let result = await db.collection('tattoo_artists').updateOne({
                 _id: ObjectId(req.params.id)
@@ -176,12 +206,11 @@ async function main() {
                         method: method,
                         temporary: temporary,
                         style: style,
+                        studio: [studio],
                         ink: ink,
                         contact: contact,
                     }
                 });
-
-
             res.status(200);
             res.send(result);
         } catch (e) {
@@ -191,50 +220,8 @@ async function main() {
             });
             console.log(e)
         }
-        try {
-            let originalStudio = await db.collection('studio_data').findOne({
-                'address.unit': studio[0]['address'][0]['unit'],
-                'address.postal': parseInt(studio[0]['address'][0]['postal'])
 
-            })
-
-
-            let studioResult = ""
-
-            if (!matchingStudio) {
-                studioResult = await db.collection('studio_data').insertOne({
-                    private: studio[0].private,
-                    address: studio[0].address,
-                    bookingsRequired: studio[0].bookingsRequired,
-                    otherServices: studio[0].otherServices
-                })
-            }
-
-            else {
-                studioResult = await db.collection('studio_data').updateOne({
-                    _id: matchingStudio._id
-                },
-                    {
-                        '$set': {
-                            private: studio[0].private,
-                            address: studio[0].address,
-                            bookingsRequired: studio[0].bookingsRequired,
-                            otherServices: studio[0].otherServices
-                        }
-                    })
-            }
-            res.status(200);
-            res.send(studioResult);
-
-        }
-
-        catch (e) {
-            res.status(500);
-            res.send({
-                error: 'error updating data, please contact administrator'
-            });
-            console.log(e)
-        }
+        
     })
 
     app.delete('/tattoo-artist/:id', async function (req, res) {
@@ -248,6 +235,7 @@ async function main() {
     })
 
 }
+
 main();
 
 app.get('/', function (req, res) {
