@@ -26,42 +26,64 @@ async function main() {
         let contact = req.body.contact;
         let studio = req.body.studio;
 
-        console.log(studio)
-        console.log(studio[0]['address'][0]['unit']);
-        console.log(parseInt(studio[0]['address'][0]['postal']))
+        //to pass studio object by reference => check if objectid already exists in database by postal code & unit-number
+        //if yes, then pass studio object by reference
+        //if not, create new studio object
 
         let matchingStudio = await db.collection('studio_data').findOne({
-            'address.unit': studio[0]['address'][0]['unit'],
-            'address.postal': parseInt(studio[0]['address'][0]['postal'])
-
+            'address.unit': studio[0]['address']['unit'],
+            'address.postal': parseInt(studio[0]['address']['postal'])
         })
 
-        if (!matchingStudio) {
-            await db.collection('studio_data').insertOne({
-                private: studio[0].private,
-                address: studio[0].address,
-                bookingsRequired: studio[0].bookingsRequired,
-                otherServices: studio[0].otherServices
-            })
+        if (matchingStudio != null) {
+            try {
+                let updated = await db.collection('studio_data').updateOne({
+                    _id: ObjectId(matchingStudio._id)
+                },
+                    {
+                        '$set': {
+                            name: studio[0].name,
+                            private: studio[0].private,
+                            address: {
+                                street: studio[0]['address']['street'],
+                                unit: studio[0]['address']['unit'],
+                                postal: parseInt(studio[0]['address']['postal'])
+                            },
+                            bookingsRequired: studio[0].bookingsRequired,
+                            otherServices: studio[0].otherServices
+                        }
+                    })
+                console.log(updated)
+
+            } catch (e) {
+                res.send('error')
+                console.log(e);
+            }
         }
 
+
         else {
-            await db.collection('studio_data').updateOne({
-                _id: matchingStudio._id
-            },
-                {
-                    '$set': {
-                        private: studio[0].private,
-                        address: studio[0].address,
-                        bookingsRequired: studio[0].bookingsRequired,
-                        otherServices: studio[0].otherServices
-                    }
+            try {
+                await db.collection('studio_data').insertOne({
+                    name: studio[0].name,
+                    private: studio[0].private,
+                    address: {
+                        street: studio[0]['address']['street'],
+                        unit: studio[0]['address']['unit'],
+                        postal: parseInt(studio[0]['address']['postal'])
+                    },
+                    bookingsRequired: studio[0].bookingsRequired,
+                    otherServices: studio[0].otherServices
                 })
+            } catch (e) {
+                res.send('error')
+                console.log(e);
+            }
         }
 
         let studioToInsert = await db.collection('studio_data').findOne({
-            'address.unit': studio[0]['address'][0]['unit'],
-            'address.postal': parseInt(studio[0]['address'][0]['postal'])
+            'address.unit': studio[0]['address']['unit'],
+            'address.postal': parseInt(studio[0]['address']['postal'])
 
         })
 
@@ -89,35 +111,61 @@ async function main() {
             console.log(e)
         }
 
-        //to pass studio object by reference => check if objectid already exists in database by postal code?
-        //if yes, then objectid = that
-        //if not, create new object id
-
     })
 
     // READ
     app.get('/show-artists', async function (req, res) {
         let criteria = {};
-        let results = await db.collection('tattoo+artists').find(criteria).toArray();
+
+        // to change req.BODY
+        if (req.query.name) {
+            criteria['name'] = {
+                $regex: req.query.name,
+                $options: "i"
+            }
+        }
+
+        if (req.query.instagram) {
+            criteria['contact'] = {
+                $elemMatch: {
+                    'instagram': {
+                        $regex: req.query.instagram,
+                        $options: "i"
+                    }
+                }
+            }
+        }
+
+        let results = await db.collection('tattoo_artists').find(criteria, {
+            projection: {
+                name: 1, yearStarted: 1, gender: 1, style: 1, ink: 1
+            }
+        }).toArray();
 
         res.status(200);
         res.send(results)
     })
 
+
     // UPDATE
     app.put('/tattoo-artist/:id', async function (req, res) {
         let name = req.body.name;
         let gender = req.body.gender;
-        let yearStarted = req.body.yearStarted;
+        let yearStarted = parseInt(req.body.yearStarted);
         let method = req.body.method;
         let temporary = req.body.temporary;
         let style = req.body.style;
         let ink = req.body.ink;
         let contact = req.body.contact;
         let studio = req.body.studio;
-
+        let originalArtist = await db.collection('tattoo_artists').findOne({
+            _id: ObjectId(req.params.id),
+        });
+        console.log(originalArtist)
+        let originalStudio = originalArtist.studio[0]['_id']
+        console.log(originalStudio)
         try {
-            let result = await db.collection('tattoo+artists').updateOne({
+            let result = await db.collection('tattoo_artists').updateOne({
                 _id: ObjectId(req.params.id)
             },
                 {
@@ -130,9 +178,10 @@ async function main() {
                         style: style,
                         ink: ink,
                         contact: contact,
-                        studio: studio,
                     }
                 });
+
+
             res.status(200);
             res.send(result);
         } catch (e) {
@@ -142,10 +191,54 @@ async function main() {
             });
             console.log(e)
         }
+        try {
+            let originalStudio = await db.collection('studio_data').findOne({
+                'address.unit': studio[0]['address'][0]['unit'],
+                'address.postal': parseInt(studio[0]['address'][0]['postal'])
+
+            })
+
+
+            let studioResult = ""
+
+            if (!matchingStudio) {
+                studioResult = await db.collection('studio_data').insertOne({
+                    private: studio[0].private,
+                    address: studio[0].address,
+                    bookingsRequired: studio[0].bookingsRequired,
+                    otherServices: studio[0].otherServices
+                })
+            }
+
+            else {
+                studioResult = await db.collection('studio_data').updateOne({
+                    _id: matchingStudio._id
+                },
+                    {
+                        '$set': {
+                            private: studio[0].private,
+                            address: studio[0].address,
+                            bookingsRequired: studio[0].bookingsRequired,
+                            otherServices: studio[0].otherServices
+                        }
+                    })
+            }
+            res.status(200);
+            res.send(studioResult);
+
+        }
+
+        catch (e) {
+            res.status(500);
+            res.send({
+                error: 'error updating data, please contact administrator'
+            });
+            console.log(e)
+        }
     })
 
     app.delete('/tattoo-artist/:id', async function (req, res) {
-        let results = await db.collection('tattoo+artists').remove({
+        let results = await db.collection('tattoo_artists').deleteOne({
             _id: ObjectId(req.params.id)
         });
         res.status(200);
@@ -153,8 +246,8 @@ async function main() {
             message: 'entry successfully deleted'
         })
     })
-}
 
+}
 main();
 
 app.get('/', function (req, res) {
