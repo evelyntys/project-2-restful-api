@@ -249,7 +249,7 @@ async function main() {
                 reviews: {
                     _id: new ObjectId(),
                     reviewer: reviewer,
-                    rating: rating,
+                    rating: parseInt(rating),
                     comment: comment
                 }
             }
@@ -260,6 +260,19 @@ async function main() {
         console.log(response)
         res.send('review successfully uploaded')
     })
+
+    //READ REVIEW
+    app.get('/tattoo-artist/:id', async function(req,res){
+        let artistID = req.params.id
+        let artist = await db.collection('tattoo_artists').findOne({
+            _id: ObjectId(artistID)
+        });
+        res.send(artist.reviews)
+    })
+
+    //UPDATE REVIEW
+
+    //DELETE REVIEW
 
 
 }
