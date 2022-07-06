@@ -11,28 +11,43 @@ app.use(express.json());
 
 app.use(cors());
 
+function returnArray(field){
+    let result = [];
+    if (Array.isArray(field)){
+        result = field
+    }
+    else if (!Array.isArray(field)){
+        result = [field]
+    }
+    return result
+}
+
 async function main() {
     let db = await MongoUtil.connect(MONGOURI, 'tattoo_API');
+    let currentYear = 2022;
 
     // CREATE MAIN
     app.post('/add-new-artist', async function (req, res) {
         let name = req.body.name;
         let gender = req.body.gender;
-        let yearStarted = req.body.yearStarted;
+        let yearStarted = parseInt(req.body.yearStarted);
+        let apprentice = req.body.apprentice;
         let method = req.body.method;
         let temporary = req.body.temporary;
         let style = req.body.style;
         let ink = req.body.ink;
         let contact = req.body.contact;
+        let images = req.body.images;
         let studio = req.body.studio;
+        let owner = req.body.owner;
 
         //to pass studio object by reference => check if objectid already exists in database by postal code & unit-number
         //if yes, then pass studio object by reference
         //if not, create new studio object
 
         let matchingStudio = await db.collection('studio_data').findOne({
-            'address.unit': studio[0]['address']['unit'],
-            'address.postal': parseInt(studio[0]['address']['postal'])
+            'address.unit': studio['address']['unit'],
+            'address.postal': parseInt(studio['address']['postal'])
         })
 
         if (matchingStudio != null) {
@@ -42,18 +57,17 @@ async function main() {
                 },
                     {
                         '$set': {
-                            name: studio[0].name,
-                            private: studio[0].private,
+                            name: studio.name,
+                            private: studio.private,
                             address: {
-                                street: studio[0]['address']['street'],
-                                unit: studio[0]['address']['unit'],
-                                postal: parseInt(studio[0]['address']['postal'])
+                                street: studio['address']['street'],
+                                unit: studio['address']['unit'],
+                                postal: parseInt(studio['address']['postal'])
                             },
-                            bookingsRequired: studio[0].bookingsRequired,
-                            otherServices: studio[0].otherServices
+                            bookingsRequired: studio.bookingsRequired,
+                            otherServices: returnArray(studio.otherServices)
                         }
                     })
-                console.log(updated)
 
             } catch (e) {
                 res.send('error')
@@ -65,15 +79,15 @@ async function main() {
         else {
             try {
                 await db.collection('studio_data').insertOne({
-                    name: studio[0].name,
-                    private: studio[0].private,
+                    name: studio.name,
+                    private: studio.private,
                     address: {
-                        street: studio[0]['address']['street'],
-                        unit: studio[0]['address']['unit'],
-                        postal: parseInt(studio[0]['address']['postal'])
+                        street: studio['address']['street'],
+                        unit: studio['address']['unit'],
+                        postal: parseInt(studio['address']['postal'])
                     },
-                    bookingsRequired: studio[0].bookingsRequired,
-                    otherServices: studio[0].otherServices
+                    bookingsRequired: studio.bookingsRequired,
+                    otherServices: returnArray(studio.otherServices)
                 })
             } catch (e) {
                 res.send('error')
@@ -82,34 +96,71 @@ async function main() {
         }
 
         let studioToInsert = await db.collection('studio_data').findOne({
-            'address.unit': studio[0]['address']['unit'],
-            'address.postal': parseInt(studio[0]['address']['postal'])
+            'address.unit': studio['address']['unit'],
+            'address.postal': parseInt(studio['address']['postal'])
 
         })
 
         studio = studioToInsert;
 
-        try {
+        let validateUser = "";
+        if (!name || name.length < 3){
+            validateUser += 'please ensure that your name contains 3 or more characters \n'
+        }
+
+        if (!yearStarted || yearStarted == NaN){
+            validateUser += 'please ensure that you enter a valid year \n'
+        }
+
+        if (method == []){
+            validateUser += 'please ensure that you select at least one method \n'
+        }
+
+        if (style == [] || !style || style.length >3 || style == null){
+            validateUser += 'please ensure that you select at least one and at most 3 styles \n'
+        }
+
+        if (ink == []){
+            validateUser += 'please ensure that you select at least one type of ink \n'
+        }
+
+        if (Object.keys(contact).length == 0  || !contact){
+            validateUser += 'please enter at least one form of contact'
+        }
+
+        if (images == [] || images.length > 3){
+            validateUser += 'please provide at least one image and at most 3'
+        }
+
+        if (Object.keys(owner).length == 0 || !owner){
+            validateUser += 'please provide your details'
+        }
+
+        if (validateUser == ""){
+        
             let result = await db.collection('tattoo_artists').insertOne({
                 name: name,
                 gender: gender,
                 yearStarted: yearStarted,
-                method: method,
+                yearsOfExperience: (currentYear-yearStarted),
+                apprentice: apprentice,
+                method: returnArray(method),
                 temporary: temporary,
-                style: style,
-                ink: ink,
+                style: returnArray(style),
+                ink: returnArray(ink),
                 contact: contact,
-                studio: [studio],
+                images: images,
+                studio: studio,
+                owner: owner
             });
-            res.status(200);
-            res.send(result);
-        } catch (e) {
-            res.status(500);
-            res.send({
-                error: 'error adding data, please contact administrator'
-            });
-            console.log(e)
+            res.send(result)
         }
+        else{
+            res.status(500)
+            res.send(validateUser)
+        }
+
+        
 
     })
 
@@ -152,16 +203,18 @@ async function main() {
         let name = req.body.name;
         let gender = req.body.gender;
         let yearStarted = parseInt(req.body.yearStarted);
+        let apprentice = req.body.apprentice;
         let method = req.body.method;
         let temporary = req.body.temporary;
         let style = req.body.style;
         let ink = req.body.ink;
         let contact = req.body.contact;
+        let images = req.body.images;
         let studio = req.body.studio;
         let artist = await db.collection('tattoo_artists').findOne({
             _id: ObjectId(req.params.id),
         });
-        let originalStudioID = artist.studio[0]['_id'];
+        let originalStudioID = artist.studio['_id'];
 
         //update studio data
         //find the original studio document
@@ -172,18 +225,17 @@ async function main() {
                 },
                     {
                         '$set': {
-                            name: studio[0].name,
-                            private: studio[0].private,
+                            name: studio.name,
+                            private: studio.private,
                             address: {
-                                street: studio[0]['address']['street'],
-                                unit: studio[0]['address']['unit'],
-                                postal: parseInt(studio[0]['address']['postal'])
+                                street: studio['address']['street'],
+                                unit: studio['address']['unit'],
+                                postal: parseInt(studio['address']['postal'])
                             },
-                            bookingsRequired: studio[0].bookingsRequired,
-                            otherServices: studio[0].otherServices
+                            bookingsRequired: studio.bookingsRequired,
+                            otherServices: returnArray(studio.otherServices)
                         }
                     })
-                console.log(updated)
 
             } catch (e) {
                 res.send('error')
@@ -203,12 +255,15 @@ async function main() {
                         name: name,
                         gender: gender,
                         yearStarted: yearStarted,
-                        method: method,
+                        yearsOfExperience: (currentYear - yearStarted),
+                        apprentice: apprentice,
+                        method: returnArray(method),
                         temporary: temporary,
-                        style: style,
-                        studio: [studio],
-                        ink: ink,
+                        style: returnArray(style),
+                        studio: studio,
+                        ink: returnArray(ink),
                         contact: contact,
+                        images: images
                     }
                 });
             res.status(200);
@@ -283,6 +338,7 @@ async function main() {
                 }
             }
         });
+        //projection returns an array
         let wantedReview = result.reviews[0];
         res.send(wantedReview)
     })
@@ -329,14 +385,14 @@ async function main() {
                 }
             }
         })
-        res.send('delete')
+        res.send('delete completed')
     })
 
 }
 main();
 
 app.get('/', function (req, res) {
-    res.send('test')
+    res.send(`<img src='https://images.squarespace-cdn.com/content/v1/5a3cc369914e6bb0df95edd9/1644838962846-NRM64EQKMI3Z6L3MSL0A/IMG_6343.JPG?format=2500w'/>`)
 })
 
 
