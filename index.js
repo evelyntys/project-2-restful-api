@@ -236,6 +236,7 @@ async function main() {
         let contact = req.body.contact;
         let images = req.body.images;
         let studio = req.body.studio;
+        let owner = req.body.owner;
         let artist = await db.collection('tattoo_artists').findOne({
             _id: ObjectId(req.params.id),
         });
@@ -244,64 +245,121 @@ async function main() {
         //update studio data
         //find the original studio document
         //update
-        try {
-            let updated = await db.collection('studio_data').updateOne({
-                _id: ObjectId(originalStudioID)
-            },
-                {
-                    '$set': {
-                        name: studio.name,
-                        private: studio.private,
-                        address: {
-                            street: studio['address']['street'],
-                            unit: studio['address']['unit'],
-                            postal: parseInt(studio['address']['postal'])
-                        },
-                        bookingsRequired: studio.bookingsRequired,
-                        otherServices: returnArray(studio.otherServices)
-                    }
-                })
 
-        } catch (e) {
-            res.send('error')
-            console.log(e);
+        let validateStudio = "";
+
+        if (owner.email != artist.owner.email) {
+            res.status(401)
+            res.send('sorry, it seems that you are not the owner of this document!')
+        }
+
+        else {
+
+            if (!studio.name) {
+                validateStudio += "please enter your studio name \n"
+            }
+
+            if (!studio.address.street) {
+                validateStudio += "please enter the street name \n"
+            }
+
+            if (!studio.address.unit) {
+                validateStudio += "please enter the unit \n"
+            }
+
+            if (!studio.address.postal || studio.address.postal.length != 6 || parseInt(studio.address.postal == NaN)) {
+                validateStudio += "please enter a valid postal code\n"
+            }
+
+            if (!studio.otherServices) {
+                validateStudio += "please enter nil if no other services \n"
+            }
+
+            if (validateStudio == "") {
+                let updated = await db.collection('studio_data').updateOne({
+                    _id: ObjectId(originalStudioID)
+                },
+                    {
+                        '$set': {
+                            name: studio.name,
+                            private: studio.private,
+                            address: {
+                                street: studio['address']['street'],
+                                unit: studio['address']['unit'],
+                                postal: parseInt(studio['address']['postal'])
+                            },
+                            bookingsRequired: studio.bookingsRequired,
+                            otherServices: returnArray(studio.otherServices)
+                        }
+                    })
+
+            } else {
+                res.status(500);
+                res.send(validateStudio)
+            }
         }
 
         studio = await db.collection('studio_data').findOne({
             _id: ObjectId(originalStudioID)
         })
 
-        try {
-            let result = await db.collection('tattoo_artists').updateOne({
-                _id: ObjectId(req.params.id)
-            },
-                {
-                    '$set': {
-                        name: name,
-                        gender: gender,
-                        yearStarted: yearStarted,
-                        yearsOfExperience: (currentYear - yearStarted),
-                        apprentice: apprentice,
-                        method: returnArray(method),
-                        temporary: temporary,
-                        style: returnArray(style),
-                        studio: studio,
-                        ink: returnArray(ink),
-                        contact: contact,
-                        images: images
-                    }
-                });
-            res.status(200);
-            res.send(result);
-        } catch (e) {
-            res.status(500);
-            res.send({
-                error: 'error updating data, please contact administrator'
-            });
-            console.log(e)
+        let validateArtist = "";
+        if (!name || name.length < 3) {
+            validateArtist += 'please ensure that your name contains 3 or more characters \n'
         }
 
+        if (!yearStarted || yearStarted == NaN) {
+            validateArtist += 'please ensure that you enter a valid year \n'
+        }
 
+        if (method == []) {
+            validateArtist += 'please ensure that you select at least one method \n'
+        }
+
+        if (style == [] || !style || style.length > 3 || style == null) {
+            validateArtist += 'please ensure that you select at least one and at most 3 styles \n'
+        }
+
+        if (ink == []) {
+            validateArtist += 'please ensure that you select at least one type of ink \n'
+        }
+
+        //to do front-end validation for key/value
+        if (Object.keys(contact).length == 0 || !contact) {
+            validateArtist += 'please enter at least one form of contact'
+        }
+
+        if (images == [] || images.length > 3) {
+            validateArtist += 'please provide at least one image and at most 3'
+        }
+
+        if (validateStudio == "") {
+            if (validateArtist == "") {
+                let result = await db.collection('tattoo_artists').updateOne({
+                    _id: ObjectId(req.params.id)
+                },
+                    {
+                        '$set': {
+                            name: name,
+                            gender: gender,
+                            yearStarted: yearStarted,
+                            yearsOfExperience: (currentYear - yearStarted),
+                            apprentice: apprentice,
+                            method: returnArray(method),
+                            temporary: temporary,
+                            style: returnArray(style),
+                            studio: studio,
+                            ink: returnArray(ink),
+                            contact: contact,
+                            images: images
+                        }
+                    });
+
+            } else {
+                res.status(500);
+                res.send(validateArtist);
+            }
+        }
     })
 
     //DELETE MAIN
@@ -394,7 +452,6 @@ async function main() {
         })
         res.send(updatedResult)
     })
-
 
     //DELETE REVIEW
     app.get('/reviews/:reviewid/delete', async function (req, res) {
