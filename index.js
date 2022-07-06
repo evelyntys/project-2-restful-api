@@ -294,7 +294,7 @@ async function main() {
                     })
 
             } else {
-                res.status(500);
+                res.status(422);
                 res.send(validateStudio)
             }
         }
@@ -356,7 +356,7 @@ async function main() {
                     });
 
             } else {
-                res.status(500);
+                res.status(422);
                 res.send(validateArtist);
             }
         }
@@ -378,25 +378,45 @@ async function main() {
     app.post('/tattoo-artist/:id/add-review', async function (req, res) {
         let artistID = req.params.id
         let reviewer = req.body.reviewer;
+        let email = req.body.email;
         let rating = req.body.rating;
         let comment = req.body.comment;
-        let response = await db.collection('tattoo_artists').updateOne({
-            _id: ObjectId(artistID)
-        }, {
-            $push: {
-                reviews: {
-                    _id: new ObjectId(),
-                    reviewer: reviewer,
-                    rating: parseInt(rating),
-                    comment: comment
+
+        let validateReview = ""
+        if (!reviewer || reviewer.length < 3) {
+            validateReview += "please ensure that your name is at least 3 characters long \n"
+        }
+        if (!email || !email.includes('@') || !email.includes('.com')) {
+            validateReview += "please ensure that you enter a valid email \n"
+        }
+        if (!rating) {
+            validateReview += "please select a rating \n"
+        }
+        if (!comment) {
+            validateReview += "please enter your review \n"
+        }
+
+        if (validateReview == "") {
+            let response = await db.collection('tattoo_artists').updateOne({
+                _id: ObjectId(artistID)
+            }, {
+                $push: {
+                    reviews: {
+                        _id: new ObjectId(),
+                        email: email,
+                        reviewer: reviewer,
+                        rating: parseInt(rating),
+                        comment: comment
+                    }
                 }
-            }
-        })
-        console.log(await db.collection('tattoo_artists').findOne({
-            _id: artistID
-        }))
-        console.log(response)
-        res.send('review successfully uploaded')
+            })
+            res.status(200);
+            res.send('review successfully uploaded');
+        }
+        else{
+            res.status(422);
+            res.send(validateReview)
+        }
     })
 
     //READ REVIEWS
@@ -475,7 +495,7 @@ async function main() {
 main();
 
 app.get('/', function (req, res) {
-    res.send(`<img src='https://images.squarespace-cdn.com/content/v1/5a3cc369914e6bb0df95edd9/1644838962846-NRM64EQKMI3Z6L3MSL0A/IMG_6343.JPG?format=2500w'/>`)
+    res.send(`<img src='https://images.squarespace-cdn.com/content/v1/5a3cc369914e6bb0df95edd9/1644838962846-NRM64EQKMI3Z6L3MSL0A/IMG_6343.JPG?format=2422w'/>`)
 })
 
 
