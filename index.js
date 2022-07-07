@@ -449,8 +449,37 @@ async function main() {
     //UPDATE REVIEW
     app.post('/reviews/:reviewid/edit', async function (req, res) {
         let result = await db.collection('tattoo_artists').findOne({
-            'reviews._id': ObjectId(req.params.reviewid)
-        });
+            'reviews._id': ObjectId(req.params.reviewid)},
+            {
+                projection: {
+                    'reviews': {
+                        $elemMatch: {
+                            _id: ObjectId(req.params.reviewid)
+                        }
+                    }
+                }
+            });
+
+        let reviewer = req.body.reviewer;
+        let email = req.body.email;
+        let rating = req.body.rating;
+        let comment = req.body.comment;
+
+        let validateReview = "";
+        if (email != result.reviews[0].email) {
+            validateReview += "sorry, it seems that you are not the owner of this review! \n"
+        }
+        if (!reviewer || reviewer.length < 3) {
+            validateReview += "please ensure that your name is at least 3 characters long \n"
+        }
+        if (!rating) {
+            validateReview += "please select a rating \n"
+        }
+        if (!comment) {
+            validateReview += "please enter your review \n"
+        }
+
+        if (validateReview == ""){
         let updated = await db.collection('tattoo_artists').updateOne({
             'reviews._id': ObjectId(req.params.reviewid)
         }, {
@@ -458,9 +487,8 @@ async function main() {
                 'reviews.$.comment': req.body.comment
             }
         })
-        console.log(updated);
         let updatedResult = await db.collection('tattoo_artists').findOne({
-            'reviews._id': ObjectId(updatedResult._id)
+            'reviews._id': ObjectId(req.params.id)
         }, {
             projection: {
                 'reviews': {
@@ -471,6 +499,11 @@ async function main() {
             }
         })
         res.send(updatedResult)
+    }
+    else{
+        res.status(422);
+        res.send(validateReview)
+    }
     })
 
     //DELETE REVIEW
