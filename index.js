@@ -219,26 +219,26 @@ async function main() {
 
         //check if an array contains the value?
         //method
-        if (req.query.method){
-        let methodQuery = req.query.method;
-        let methodArr =[];
-        if (!methodQuery.includes(',')){
-            methodArr = [methodQuery]
-        }
-        else{
-            methodArr = req.query.method.split(',');
-        }
+        if (req.query.method) {
+            let methodQuery = req.query.method;
+            let methodArr = [];
+            if (!methodQuery.includes(',')) {
+                methodArr = [methodQuery]
+            }
+            else {
+                methodArr = req.query.method.split(',');
+            }
 
             criteria['method'] = {
                 $all: methodArr
             }
-    }
+        }
         // $in: [
         //     req.query.method
         // ]
 
         //temporary
-        if (req.query.temporary){
+        if (req.query.temporary) {
             criteria['temporary'] = {
                 $regex: req.query.temporary,
                 $options: "i"
@@ -246,12 +246,12 @@ async function main() {
         }
 
         //style
-        if (req.query.style){
+        if (req.query.style) {
             let styleQuery = [];
-            if (!req.query.style.includes(',')){
+            if (!req.query.style.includes(',')) {
                 styleQuery = [req.query.style]
             }
-            else{
+            else {
                 styleQuery = req.query.style.split(',')
             }
             criteria['style'] = {
@@ -260,12 +260,12 @@ async function main() {
         }
 
         //ink
-        if (req.query.ink){
+        if (req.query.ink) {
             let inkQuery = [];
-            if (!req.query.ink.includes(',')){
+            if (!req.query.ink.includes(',')) {
                 inkQuery = [req.query.ink]
             }
-            else{
+            else {
                 inkQuery = req.query.ink.split(',')
             }
             criteria['ink'] = {
@@ -274,10 +274,10 @@ async function main() {
         }
 
         //private studio
-        if (req.query.privateStudio){
+        if (req.query.privateStudio) {
             criteria['studio.private'] = {
                 $regex: req.query.privateStudio,
-                    $options: "i"
+                $options: "i"
                 // private: {
                 //     $regex: req.query.privateStudio,
                 //     $options: "i"
@@ -286,7 +286,7 @@ async function main() {
         }
 
         //studio bookings required
-        if (req.query.bookingsRequired){
+        if (req.query.bookingsRequired) {
             criteria['studio.bookingsRequired'] = {
                 $regex: req.query.bookingsRequired,
                 $options: "i"
@@ -294,7 +294,7 @@ async function main() {
         }
 
         //studio other services
-        if (req.query.otherServices){
+        if (req.query.otherServices) {
             criteria['studio.otherServices'] = {
                 $regex: req.query.otherServices,
                 $options: "i"
