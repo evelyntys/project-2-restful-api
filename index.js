@@ -219,17 +219,33 @@ async function main() {
 
         //check if an array contains the value?
         //method
+        if (req.query.method){
+        let methodQuery = req.query.method;
+        let methodArr =[];
+        if (!methodQuery.includes(',')){
+            methodArr = [methodQuery]
+        }
+        else{
+            methodArr = req.query.method.split(',');
+        }
+
         if (req.query.method) {
             criteria['method'] = {
-                $regex: req.query.method,
-                $options: "i"
+                $all: methodArr
             }
         }
+    }
         // $in: [
         //     req.query.method
         // ]
 
         //temporary
+        if (req.query.temporary){
+            criteria['temporary'] = {
+                $regex: req.query.temporary,
+                $options: "i"
+            }
+        }
 
         //style
 
@@ -237,9 +253,32 @@ async function main() {
 
         //private studio
 
+        if (req.query.privateStudio){
+            criteria['studio.private'] = {
+                $regex: req.query.privateStudio,
+                    $options: "i"
+                // private: {
+                //     $regex: req.query.privateStudio,
+                //     $options: "i"
+                // }
+            }
+        }
+
         //studio bookings required
+        if (req.query.bookingsRequired){
+            criteria['studio.bookingsRequired'] = {
+                $regex: req.query.bookingsRequired,
+                $options: "i"
+            }
+        }
 
         //studio other services
+        if (req.query.otherServices){
+            criteria['studio.otherServices'] = {
+                $regex: req.query.otherServices,
+                $options: "i"
+            }
+        }
 
         //reviews ratings
 
