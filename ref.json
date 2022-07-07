@@ -1,0 +1,106 @@
+[
+    {
+        "name": "Nic",
+        "gender": "female",
+        "yearStarted": "2020",
+        "apprentice": "no",
+        "method": [
+            "handpoke",
+            "machine"
+        ],
+        "temporary": "no",
+        "style": [
+            "minimalistic",
+            "words-and-scripts"
+        ],
+        "ink": [
+            "black",
+            "colours",
+            "uv"
+        ],
+        "contact": {
+            "telegram": "@todayipoketele",
+            "instagram": "@todayi.poke"
+        },
+        "images":[],
+        "studio": {
+            "private": "yes",
+            "address": {
+                "street": "138 Robinson Road Oxley Tower",
+                "unit": "#02-12",
+                "postal": "068906"
+            },
+            "bookingsRequired": "yes",
+            "otherServices": "nil",
+            "name": "today i poke"
+        },
+        "owner": {
+            "name": "abc",
+            "email": "abc@gmail.com"
+        },
+        "reviews":[
+            {"_id": "create by mongodb",
+            "reviewer": "john",
+            "rating": 5,
+            "comment": "very calm and patient"}
+        ]
+    },
+    {
+        "name": "Rui",
+        "gender": "female",
+        "yearStarted": "2021",
+        "method": "handpoke",
+        "temporary": "no",
+        "style": "fineline",
+        "ink": [
+            "black",
+            "colors"
+        ],
+        "contact": {
+            "instagram": "@theruijects"
+        },
+        "images":[],
+        "studio": {
+            "private": "no",
+            "address": {
+                "street": "Woodlands 11, 11 Woodlands Close",
+                "unit": "#07-39",
+                "postal": "737853"
+            },
+            "bookingsRequired": "yes",
+            "otherServices": "nil",
+            "name": "moshpit mondays"
+        }
+    },
+    {
+        "name": "See Min",
+        "gender": "female",
+        "yearStarted": "2016",
+        "apprentice": "no",
+        "method": "jagua",
+        "temporary": "yes",
+        "style": "floral, surrealism, minimalist",
+        "ink": [
+            "jagua"
+        ],
+        "contact": {
+            "instagram": "@henn.drawn",
+            "facebook": "https://www.facebook.com/henn.drawn.sg"
+        },
+        "images":["https://images.squarespace-cdn.com/content/v1/5a3cc369914e6bb0df95edd9/1644838962846-NRM64EQKMI3Z6L3MSL0A/IMG_6343.JPG?format=2500w",
+        "https://images.squarespace-cdn.com/content/v1/5a3cc369914e6bb0df95edd9/1644838689206-5SXA0V2JV8PMSNLTALR0/DSC06938.JPG?format=2500w",
+        "https://images.squarespace-cdn.com/content/v1/5a3cc369914e6bb0df95edd9/1644838984772-12S91VT0L276M89S0763/IMG_3421.JPG?format=2500w"],
+        "studio": {
+            "private": "no",
+            "address": {
+                "street": "164 Ganga Road",
+                "unit": "",
+                "postal": "670164"
+            },
+            "bookingsRequired": "yes",
+            "otherServices": "nil",
+            "name": "HENN DRAWN"
+        }
+    }
+
+]
