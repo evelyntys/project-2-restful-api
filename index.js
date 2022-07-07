@@ -133,7 +133,7 @@ async function main() {
             validateArtist += 'please ensure that you enter a valid year \n'
         }
 
-        if (method == []) {
+        if (method == [] || method.length == 0) {
             validateArtist += 'please ensure that you select at least one method \n'
         }
 
@@ -150,7 +150,7 @@ async function main() {
             validateArtist += 'please enter at least one form of contact'
         }
 
-        if (images == [] || images.length > 3) {
+        if (images == [] || images.length > 3 || images.length == 0) {
             validateArtist += 'please provide at least one image and at most 3'
         }
 
@@ -180,6 +180,7 @@ async function main() {
                     studio: studio,
                     owner: owner
                 });
+                res.status(200)
                 res.send(result)
             }
             else {
@@ -193,7 +194,7 @@ async function main() {
     app.get('/show-artists', async function (req, res) {
         let criteria = {};
 
-        // to change to req.BODY
+        //name
         if (req.query.name) {
             criteria['name'] = {
                 $regex: req.query.name,
@@ -201,6 +202,50 @@ async function main() {
             }
         }
 
+        //gender
+        if (req.query.gender) {
+            criteria['gender'] = {
+                $regex: req.query.gender,
+                $options: "i"
+            }
+        }
+
+        //years of experience -> have to filter by min years
+        if (req.query.yearsOfExperience) {
+            criteria['yearsOfExperience'] = {
+                $gt: parseInt(req.query.yearsOfExperience)
+            }
+        }
+
+        //check if an array contains the value?
+        //method
+        if (req.query.method) {
+            criteria['method'] = {
+                $regex: req.query.method,
+                $options: "i"
+            }
+        }
+        // $in: [
+        //     req.query.method
+        // ]
+
+        //temporary
+
+        //style
+
+        //ink
+
+        //private studio
+
+        //studio bookings required
+
+        //studio other services
+
+        //reviews ratings
+
+
+        //elemMatch only for things embedded within an array?
+        //validation for query required?
         if (req.query.instagram) {
             criteria['contact'] = {
                 $elemMatch: {
@@ -212,9 +257,21 @@ async function main() {
             }
         }
 
+        // if (req.query.instagram){
+        //     criteria['contact.instagram'] = {
+        //         $regex: req.query.instagram,
+        //         $options: "i"
+        //     }
+        // }
+
+        if (req.query.phone) {
+            criteria['contact.phone'] = req.query.phone
+        }
+
+        console.log(criteria)
         let results = await db.collection('tattoo_artists').find(criteria, {
             projection: {
-                name: 1, yearStarted: 1, gender: 1, style: 1, ink: 1
+                name: 1, yearsOfExperience: 1, gender: 1, method: 1, style: 1, ink: 1, contact: 1, studio: { private: 1, bookingsRequired: 1 }
             }
         }).toArray();
 
@@ -413,7 +470,7 @@ async function main() {
             res.status(200);
             res.send('review successfully uploaded');
         }
-        else{
+        else {
             res.status(422);
             res.send(validateReview)
         }
@@ -449,7 +506,8 @@ async function main() {
     //UPDATE REVIEW
     app.post('/reviews/:reviewid/edit', async function (req, res) {
         let result = await db.collection('tattoo_artists').findOne({
-            'reviews._id': ObjectId(req.params.reviewid)},
+            'reviews._id': ObjectId(req.params.reviewid)
+        },
             {
                 projection: {
                     'reviews': {
@@ -479,31 +537,31 @@ async function main() {
             validateReview += "please enter your review \n"
         }
 
-        if (validateReview == ""){
-        let updated = await db.collection('tattoo_artists').updateOne({
-            'reviews._id': ObjectId(req.params.reviewid)
-        }, {
-            $set: {
-                'reviews.$.comment': req.body.comment
-            }
-        })
-        let updatedResult = await db.collection('tattoo_artists').findOne({
-            'reviews._id': ObjectId(req.params.id)
-        }, {
-            projection: {
-                'reviews': {
-                    $elemMatch: {
-                        _id: ObjectId(req.params.reviewid)
+        if (validateReview == "") {
+            let updated = await db.collection('tattoo_artists').updateOne({
+                'reviews._id': ObjectId(req.params.reviewid)
+            }, {
+                $set: {
+                    'reviews.$.comment': req.body.comment
+                }
+            })
+            let updatedResult = await db.collection('tattoo_artists').findOne({
+                'reviews._id': ObjectId(req.params.id)
+            }, {
+                projection: {
+                    'reviews': {
+                        $elemMatch: {
+                            _id: ObjectId(req.params.reviewid)
+                        }
                     }
                 }
-            }
-        })
-        res.send(updatedResult)
-    }
-    else{
-        res.status(422);
-        res.send(validateReview)
-    }
+            })
+            res.send(updatedResult)
+        }
+        else {
+            res.status(422);
+            res.send(validateReview)
+        }
     })
 
     //DELETE REVIEW
@@ -527,7 +585,7 @@ async function main() {
 main();
 
 app.get('/', function (req, res) {
-    res.send(`<img src='https://images.squarespace-cdn.com/content/v1/5a3cc369914e6bb0df95edd9/1644838962846-NRM64EQKMI3Z6L3MSL0A/IMG_6343.JPG?format=2422w'/>`)
+    res.send(`<img src='http://drive.google.com/uc?export=view&id=1t6xnQj0upRS_ErtEWeEZJWaqpM7x3RsG'/>`)
 })
 
 
