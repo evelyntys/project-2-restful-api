@@ -229,11 +229,9 @@ async function main() {
             methodArr = req.query.method.split(',');
         }
 
-        if (req.query.method) {
             criteria['method'] = {
                 $all: methodArr
             }
-        }
     }
         // $in: [
         //     req.query.method
@@ -248,11 +246,34 @@ async function main() {
         }
 
         //style
+        if (req.query.style){
+            let styleQuery = [];
+            if (!req.query.style.includes(',')){
+                styleQuery = [req.query.style]
+            }
+            else{
+                styleQuery = req.query.style.split(',')
+            }
+            criteria['style'] = {
+                $all: styleQuery
+            }
+        }
 
         //ink
+        if (req.query.ink){
+            let inkQuery = [];
+            if (!req.query.ink.includes(',')){
+                inkQuery = [req.query.ink]
+            }
+            else{
+                inkQuery = req.query.ink.split(',')
+            }
+            criteria['ink'] = {
+                $all: inkQuery
+            }
+        }
 
         //private studio
-
         if (req.query.privateStudio){
             criteria['studio.private'] = {
                 $regex: req.query.privateStudio,
