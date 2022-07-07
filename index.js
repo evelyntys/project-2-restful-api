@@ -28,7 +28,7 @@ async function main() {
 
     // CREATE MAIN
     app.post('/add-new-artist', async function (req, res) {
-        let name = req.body.name;
+        let name = req.body.name.toLowerCase();
         let gender = req.body.gender;
         let yearStarted = parseInt(req.body.yearStarted);
         let apprentice = req.body.apprentice;
@@ -39,7 +39,8 @@ async function main() {
         let contact = req.body.contact;
         let images = req.body.images;
         let studio = req.body.studio;
-        let owner = req.body.owner;
+        let ownerName = req.body.owner.name.toLowerCase();
+        let ownerEmail = req.body.owner.email.toLowerCase()
 
         //to pass studio object by reference => check if objectid already exists in database by postal code & unit-number
         //if yes, then pass studio object by reference
@@ -79,15 +80,15 @@ async function main() {
                 },
                     {
                         '$set': {
-                            name: studio.name,
+                            name: studio.name.toLowerCase(),
                             private: studio.private,
                             address: {
-                                street: studio['address']['street'],
+                                street: studio['address']['street'].toLowerCase(),
                                 unit: studio['address']['unit'],
                                 postal: parseInt(studio['address']['postal'])
                             },
                             bookingsRequired: studio.bookingsRequired,
-                            otherServices: returnArray(studio.otherServices)
+                            otherServices: returnArray(studio.otherServices).toLowerCase()
                         }
                     })
             } else {
@@ -100,15 +101,15 @@ async function main() {
         else {
             if (validateStudio == "") {
                 let insertSuccess = await db.collection('studio_data').insertOne({
-                    name: studio.name,
+                    name: studio.name.toLowerCase(),
                     private: studio.private,
                     address: {
-                        street: studio['address']['street'],
+                        street: studio['address']['street'].toLowerCase(),
                         unit: studio['address']['unit'],
                         postal: parseInt(studio['address']['postal'])
                     },
                     bookingsRequired: studio.bookingsRequired,
-                    otherServices: returnArray(studio.otherServices)
+                    otherServices: returnArray(studio.otherServices).toLowerCase()
                 })
             } else {
                 res.status(400)
@@ -178,7 +179,10 @@ async function main() {
                     contact: contact,
                     images: images,
                     studio: studio,
-                    owner: owner
+                    owner: {
+                        name: ownerName,
+                        email: ownerEmail
+                    }
                 });
                 res.status(200)
                 res.send(result)
@@ -269,7 +273,7 @@ async function main() {
                 inkQuery = req.query.ink.split(',')
             }
             criteria['ink'] = {
-                $all: inkQuery
+                $all: inkQuery //have to convert before putting in 
             }
         }
 
@@ -306,23 +310,12 @@ async function main() {
 
         //elemMatch only for things embedded within an array?
         //validation for query required?
-        if (req.query.instagram) {
-            criteria['contact'] = {
-                $elemMatch: {
-                    'instagram': {
-                        $regex: req.query.instagram,
-                        $options: "i"
-                    }
-                }
+        if (req.query.instagram){
+            criteria['contact.instagram'] = {
+                $regex: req.query.instagram,
+                $options: "i"
             }
         }
-
-        // if (req.query.instagram){
-        //     criteria['contact.instagram'] = {
-        //         $regex: req.query.instagram,
-        //         $options: "i"
-        //     }
-        // }
 
         if (req.query.phone) {
             criteria['contact.phone'] = req.query.phone
@@ -342,7 +335,7 @@ async function main() {
 
     // UPDATE MAIN
     app.put('/tattoo-artist/:id', async function (req, res) {
-        let name = req.body.name;
+        let name = req.body.name.toLowerCase();
         let gender = req.body.gender;
         let yearStarted = parseInt(req.body.yearStarted);
         let apprentice = req.body.apprentice;
@@ -351,9 +344,13 @@ async function main() {
         let style = req.body.style;
         let ink = req.body.ink;
         let contact = req.body.contact;
+        for (let key in contact) { 
+              contact[key] = contact[key].toLowerCase();
+        }
         let images = req.body.images;
         let studio = req.body.studio;
-        let owner = req.body.owner;
+        let ownerName = req.body.owner.name;
+        let ownerEmail = req.body.owner.email;
         let artist = await db.collection('tattoo_artists').findOne({
             _id: ObjectId(req.params.id),
         });
@@ -398,15 +395,15 @@ async function main() {
                 },
                     {
                         '$set': {
-                            name: studio.name,
+                            name: studio.name.toLowerCase(),
                             private: studio.private,
                             address: {
-                                street: studio['address']['street'],
+                                street: studio['address']['street'].toLowerCase(),
                                 unit: studio['address']['unit'],
                                 postal: parseInt(studio['address']['postal'])
                             },
                             bookingsRequired: studio.bookingsRequired,
-                            otherServices: returnArray(studio.otherServices)
+                            otherServices: returnArray(studio.otherServices).toLowerCase()
                         }
                     })
 
@@ -494,8 +491,8 @@ async function main() {
     //CREATE REVIEW
     app.post('/tattoo-artist/:id/add-review', async function (req, res) {
         let artistID = req.params.id
-        let reviewer = req.body.reviewer;
-        let email = req.body.email;
+        let reviewer = req.body.reviewer.toLowerCase();
+        let email = req.body.email.toLowerCase();
         let rating = req.body.rating;
         let comment = req.body.comment;
 
@@ -578,8 +575,8 @@ async function main() {
                 }
             });
 
-        let reviewer = req.body.reviewer;
-        let email = req.body.email;
+        let reviewer = req.body.reviewer.toLowerCase();
+        let email = req.body.email.toLowerCase();
         let rating = req.body.rating;
         let comment = req.body.comment;
 
