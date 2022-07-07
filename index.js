@@ -511,7 +511,6 @@ async function main() {
         let result = await db.collection('tattoo_artists').findOne({
             'reviews._id': ObjectId(req.params.reviewid)
         });
-        console.log(result)
         await db.collection('tattoo_artists').updateOne({
             _id: ObjectId(result._id)
         }, {
