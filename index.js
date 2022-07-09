@@ -29,7 +29,7 @@ async function main() {
     // CREATE MAIN
     app.post('/add-new-artist', async function (req, res) {
         let name = req.body.name.toLowerCase();
-        let gender = req.body.gender;
+        let gender = req.body.gender || ""
         let yearStarted = parseInt(req.body.yearStarted);
         let apprentice = req.body.apprentice;
         let method = req.body.method;
@@ -38,38 +38,60 @@ async function main() {
         let ink = req.body.ink;
         let contact = req.body.contact;
         let images = req.body.images;
-        let studio = req.body.studio;
-        let ownerName = req.body.owner.name.toLowerCase();
-        let ownerEmail = req.body.owner.email.toLowerCase()
+        let studioName = req.body.studioName;
+        let private = req.body.private;
+        let bookingsRequired = req.body.bookingsRequired;
+        let street = req.body.street.toLowerCase();
+        let unit = req.body.unit;
+        let postal = req.body.postal;
+        let otherServices = req.body.otherServices;
+        let studio = {
+            name: studioName.toLowerCase(),
+            private: private,
+            address: {
+                street: street,
+                unit: unit,
+                postal: parseInt(postal)
+            },
+            bookingsRequired: bookingsRequired,
+            otherServices: returnArray(otherServices)
+        };
+        let ownerName = req.body.ownerName.toLowerCase();
+        let ownerEmail = req.body.ownerEmail.toLowerCase();
+        // let ownerName = req.body.owner.name.toLowerCase();
+        // let ownerEmail = req.body.owner.email.toLowerCase();
 
+        //must send body over -> owner name
+
+        //or comparator => empty string => if react didnt send anything then will create empty string instead
         //to pass studio object by reference => check if objectid already exists in database by postal code & unit-number
         //if yes, then pass studio object by reference
         //if not, create new studio object
 
         let matchingStudio = await db.collection('studio_data').findOne({
-            'address.unit': studio['address']['unit'],
-            'address.postal': parseInt(studio['address']['postal'])
+            'address.unit': unit,
+            'address.postal': parseInt(postal)
         })
 
         let validateStudio = "";
 
-        if (!studio.name) {
+        if (!studioName) {
             validateStudio += "please enter your studio name \n"
         }
 
-        if (!studio.address.street) {
+        if (!street) {
             validateStudio += "please enter the street name \n"
         }
 
-        if (!studio.address.unit) {
+        if (!unit) {
             validateStudio += "please enter the unit \n"
         }
 
-        if (!studio.address.postal || studio.address.postal.length != 6 || parseInt(studio.address.postal == NaN)) {
+        if (!postal || postal.length != 6 || parseInt(postal) == NaN) {
             validateStudio += "please enter a valid postal code\n"
         }
 
-        if (!studio.otherServices) {
+        if (!otherServices) {
             validateStudio += "please enter nil if no other services \n"
         }
 
@@ -80,15 +102,15 @@ async function main() {
                 },
                     {
                         '$set': {
-                            name: studio.name.toLowerCase(),
-                            private: studio.private,
+                            name: studioName.toLowerCase(),
+                            private: private,
                             address: {
-                                street: studio['address']['street'].toLowerCase(),
-                                unit: studio['address']['unit'],
-                                postal: parseInt(studio['address']['postal'])
+                                street: street,
+                                unit: unit,
+                                postal: parseInt(postal)
                             },
-                            bookingsRequired: studio.bookingsRequired,
-                            otherServices: returnArray(studio.otherServices).toLowerCase()
+                            bookingsRequired: bookingsRequired,
+                            otherServices: returnArray(otherServices)
                         }
                     })
             } else {
@@ -101,15 +123,15 @@ async function main() {
         else {
             if (validateStudio == "") {
                 let insertSuccess = await db.collection('studio_data').insertOne({
-                    name: studio.name.toLowerCase(),
-                    private: studio.private,
+                    name: studioName.toLowerCase(),
+                    private: private,
                     address: {
-                        street: studio['address']['street'].toLowerCase(),
-                        unit: studio['address']['unit'],
-                        postal: parseInt(studio['address']['postal'])
+                        street: street,
+                        unit: unit,
+                        postal: parseInt(postal)
                     },
-                    bookingsRequired: studio.bookingsRequired,
-                    otherServices: returnArray(studio.otherServices).toLowerCase()
+                    bookingsRequired: bookingsRequired,
+                    otherServices: returnArray(otherServices)
                 })
             } else {
                 res.status(400)
@@ -118,8 +140,8 @@ async function main() {
         }
 
         let studioToInsert = await db.collection('studio_data').findOne({
-            'address.unit': studio['address']['unit'],
-            'address.postal': parseInt(studio['address']['postal'])
+            'address.unit': unit,
+            'address.postal': parseInt(postal)
 
         })
 
@@ -151,16 +173,16 @@ async function main() {
             validateArtist += 'please enter at least one form of contact'
         }
 
-        if (images == [] || images.length > 3 || images.length == 0) {
+        if (!images) {
             validateArtist += 'please provide at least one image and at most 3'
         }
 
         //validating owner
-        if (!owner.name || owner.name.length < 3) {
+        if (!ownerName || ownerName.length < 3) {
             validateArtist += 'please ensure that your name contains 3 or more characters \n'
         }
 
-        if (!owner.email || !owner.email.includes('@') || !owner.email.includes('.com')) {
+        if (!ownerEmail || !ownerEmail.includes('@') || !ownerEmail.includes('.com')) {
             validateArtist += 'please ensure that you enter a valid email \n'
         }
 
@@ -310,7 +332,7 @@ async function main() {
 
         //elemMatch only for things embedded within an array?
         //validation for query required?
-        if (req.query.instagram){
+        if (req.query.instagram) {
             criteria['contact.instagram'] = {
                 $regex: req.query.instagram,
                 $options: "i"
@@ -344,8 +366,8 @@ async function main() {
         let style = req.body.style;
         let ink = req.body.ink;
         let contact = req.body.contact;
-        for (let key in contact) { 
-              contact[key] = contact[key].toLowerCase();
+        for (let key in contact) {
+            contact[key] = contact[key].toLowerCase();
         }
         let images = req.body.images;
         let studio = req.body.studio;
