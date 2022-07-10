@@ -8,6 +8,7 @@ const MONGOURI = process.env.MONGO_URI;
 let app = express();
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }))
 
 app.use(cors());
 
@@ -37,7 +38,7 @@ async function main() {
         let style = req.body.style;
         let ink = req.body.ink;
         let contact = req.body.contact;
-        let images = req.body.images;
+        let image = req.body.image;
         let studioName = req.body.studioName;
         let private = req.body.private;
         let bookingsRequired = req.body.bookingsRequired;
@@ -219,7 +220,6 @@ async function main() {
     // READ MAIN
     app.get('/show-artists', async function (req, res) {
         let criteria = {};
-
         //name
         if (req.query.name) {
             criteria['name'] = {
@@ -344,16 +344,26 @@ async function main() {
         }
 
         console.log(criteria)
-        let results = await db.collection('tattoo_artists').find(criteria, {
-            projection: {
-                name: 1, yearsOfExperience: 1, gender: 1, method: 1, style: 1, ink: 1, contact: 1, studio: { private: 1, bookingsRequired: 1 }
-            }
-        }).toArray();
+        let results = await db.collection('tattoo_artists').find(criteria, 
+            // {
+        //     projection: {
+        //         name: 1, yearsOfExperience: 1, gender: 1, method: 1, style: 1, ink: 1, contact: 1, studio: { private: 1, bookingsRequired: 1 }
+        //     }
+        // }
+        ).toArray();
 
         res.status(200);
         res.send(results)
     })
 
+    //READ BY ID
+    app.get('/tattoo-artist/:id', async function(req,res){
+        let id = req.params.id
+        let artist = await db.collection('tattoo_artists').findOne({
+            _id: ObjectId(req.params.id),
+        });
+        res.send(artist)
+    })
 
     // UPDATE MAIN
     app.put('/tattoo-artist/:id', async function (req, res) {
@@ -366,13 +376,26 @@ async function main() {
         let style = req.body.style;
         let ink = req.body.ink;
         let contact = req.body.contact;
-        for (let key in contact) {
-            contact[key] = contact[key].toLowerCase();
-        }
-        let images = req.body.images;
-        let studio = req.body.studio;
-        let ownerName = req.body.owner.name;
-        let ownerEmail = req.body.owner.email;
+        let image = req.body.image;
+        let ownerEmail = req.body.ownerEmail;
+        let studioName = req.body.studioName;
+        let private = req.body.private;
+        let bookingsRequired = req.body.bookingsRequired;
+        let street = req.body.street.toLowerCase();
+        let unit = req.body.unit;
+        let postal = parseInt(req.body.postal);
+        let otherServices = req.body.otherServices;
+        let studio = {
+            name: studioName.toLowerCase(),
+            private: private,
+            address: {
+                street: street,
+                unit: unit,
+                postal: postal
+            },
+            bookingsRequired: bookingsRequired,
+            otherServices: returnArray(otherServices)
+        };
         let artist = await db.collection('tattoo_artists').findOne({
             _id: ObjectId(req.params.id),
         });
@@ -384,7 +407,7 @@ async function main() {
 
         let validateStudio = "";
 
-        if (owner.email != artist.owner.email) {
+        if (ownerEmail != artist.owner.email) {
             res.status(401)
             res.send('sorry, it seems that you are not the owner of this document!')
         }
@@ -403,8 +426,8 @@ async function main() {
                 validateStudio += "please enter the unit \n"
             }
 
-            if (!studio.address.postal || studio.address.postal.length != 6 || parseInt(studio.address.postal == NaN)) {
-                validateStudio += "please enter a valid postal code\n"
+            if (!studio.address.postal || studio.address.postal.toString().length != 6 || studio.address.postal == NaN) {
+                validateStudio += "please enter a valid postal code \n"
             }
 
             if (!studio.otherServices) {
@@ -417,15 +440,15 @@ async function main() {
                 },
                     {
                         '$set': {
-                            name: studio.name.toLowerCase(),
-                            private: studio.private,
+                            name: studioName.toLowerCase(),
+                            private: private,
                             address: {
-                                street: studio['address']['street'].toLowerCase(),
-                                unit: studio['address']['unit'],
-                                postal: parseInt(studio['address']['postal'])
+                                street: street.toLowerCase(),
+                                unit: unit,
+                                postal: postal
                             },
-                            bookingsRequired: studio.bookingsRequired,
-                            otherServices: returnArray(studio.otherServices).toLowerCase()
+                            bookingsRequired: bookingsRequired,
+                            otherServices: returnArray(otherServices)
                         }
                     })
 
@@ -461,12 +484,12 @@ async function main() {
         }
 
         //to do front-end validation for key/value
-        if (Object.keys(contact).length == 0 || !contact) {
+        if (contact.length == 0) {
             validateArtist += 'please enter at least one form of contact'
         }
 
-        if (images == [] || images.length > 3) {
-            validateArtist += 'please provide at least one image and at most 3'
+        if (!image) {
+            validateArtist += 'please provide at least one image'
         }
 
         if (validateStudio == "") {
@@ -487,9 +510,11 @@ async function main() {
                             studio: studio,
                             ink: returnArray(ink),
                             contact: contact,
-                            images: images
+                            image: image
                         }
                     });
+                    res.status(200)
+                    res.send('entry successfully updated')
 
             } else {
                 res.status(422);
@@ -500,13 +525,28 @@ async function main() {
 
     //DELETE MAIN
     app.delete('/tattoo-artist/:id', async function (req, res) {
-        let results = await db.collection('tattoo_artists').deleteOne({
+        let email = req.body.email;
+        console.log(req.body)
+        let recordToDelete = await db.collection('tattoo_artists').findOne({
             _id: ObjectId(req.params.id)
-        });
-        res.status(200);
-        res.send({
-            message: 'entry successfully deleted'
         })
+        console.log(email)
+        console.log(recordToDelete)
+        console.log(recordToDelete.owner.email)
+        if (email == recordToDelete.owner.email){
+            let results = await db.collection('tattoo_artists').deleteOne({
+                _id: ObjectId(req.params.id)
+            });
+            res.status(200);
+            res.send({
+                message: 'entry successfully deleted'
+            })
+        }
+        else{
+            res.status(400)
+            res.send('sorry it seems that you are not the owner of this document!')
+        }
+        
     })
 
 
