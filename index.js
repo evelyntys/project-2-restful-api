@@ -240,7 +240,6 @@ async function main() {
         };
 
         //gender
-        console.log(req.query.gender)
         if (req.query.gender && req.query.gender.length !=0 ) {
             let genderQuery = [];
             if (!req.query.gender.includes(',')) {
@@ -254,6 +253,7 @@ async function main() {
             }
         }
 
+        //have to change
         //years of experience -> have to filter by min years
         if (req.query.yearsOfExperience) {
             criteria['yearsOfExperience'] = {
@@ -263,23 +263,20 @@ async function main() {
 
         //check if an array contains the value?
         //method
-        if (req.query.method) {
-            let methodQuery = req.query.method;
-            let methodArr = [];
-            if (!methodQuery.includes(',')) {
-                methodArr = [methodQuery]
+        if (req.query.method && req.query.method.length !=0 ) {
+            let methodQuery = [];
+            if (!req.query.method.includes(',')) {
+                methodQuery = [req.query.method]
             }
             else {
-                methodArr = req.query.method.split(',');
+                methodQuery = req.query.method.split(',');
             }
 
             criteria['method'] = {
-                $all: methodArr
+                $in: methodQuery
             }
+            // change to $all if only want machine, machine&handpoke, handpoke
         }
-        // $in: [
-        //     req.query.method
-        // ]
 
         //temporary
         if (req.query.temporary) {
@@ -299,7 +296,7 @@ async function main() {
                 styleQuery = req.query.style.split(',')
             }
             criteria['style'] = {
-                $all: styleQuery
+                $in: styleQuery
             }
         }
 
