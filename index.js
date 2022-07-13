@@ -218,8 +218,8 @@ async function main() {
     // READ MAIN
     app.get('/show-artists', async function (req, res) {
         let criteria = {};
-        //name
-
+        
+        //search box searches for name, studio name and contact fields
         if (req.query.search){
             let nameCriteria = {};
             nameCriteria['name'] = {
@@ -239,18 +239,18 @@ async function main() {
             criteria = {$or : [nameCriteria, studioNameCriteria, instagramCriteria]}
         };
 
-        if (req.query.name) {
-            criteria['name'] = {
-                $regex: req.query.name,
-                $options: "i"
-            }
-        }
-
         //gender
-        if (req.query.gender) {
+        console.log(req.query.gender)
+        if (req.query.gender && req.query.gender.length !=0 ) {
+            let genderQuery = [];
+            if (!req.query.gender.includes(',')) {
+                genderQuery = [req.query.gender]
+            }
+            else {
+                genderQuery = req.query.gender.split(',')
+            }
             criteria['gender'] = {
-                $regex: req.query.gender,
-                $options: "i"
+                $in: genderQuery
             }
         }
 
@@ -361,7 +361,7 @@ async function main() {
             criteria['contact.phone'] = req.query.phone
         }
 
-        console.log(criteria)
+        console.log(criteria);
         let results = await db.collection('tattoo_artists').find(criteria,
             // {
             //     projection: {
