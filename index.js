@@ -219,6 +219,26 @@ async function main() {
     app.get('/show-artists', async function (req, res) {
         let criteria = {};
         //name
+
+        if (req.query.search){
+            let nameCriteria = {};
+            nameCriteria['name'] = {
+                $regex: req.query.search,
+                $options: "i"
+            }
+            let studioNameCriteria ={};
+            studioNameCriteria['studio.name'] = {
+                $regex: req.query.search,
+                $options: "i"
+            }
+            let instagramCriteria = {};
+            instagramCriteria['contact.contactValue'] = {
+                $regex: req.query.search,
+                $options: "i"
+            }
+            criteria = {$or : [nameCriteria, studioNameCriteria, instagramCriteria]}
+        };
+
         if (req.query.name) {
             criteria['name'] = {
                 $regex: req.query.name,
