@@ -59,6 +59,7 @@ async function main() {
         let ownerEmail = req.body.ownerEmail.toLowerCase();
         // let ownerName = req.body.owner.name.toLowerCase();
         // let ownerEmail = req.body.owner.email.toLowerCase();
+        let styleValues = style.map(value => value.value);
 
         //must send body over -> owner name
 
@@ -195,7 +196,7 @@ async function main() {
                     apprentice: apprentice,
                     method: returnArray(method),
                     temporary: temporary,
-                    style: returnArray(style),
+                    style: styleValues,
                     ink: returnArray(ink),
                     contact: contact,
                     image: image,
@@ -218,15 +219,15 @@ async function main() {
     // READ MAIN
     app.get('/show-artists', async function (req, res) {
         let criteria = {};
-        
+
         //search box searches for name, studio name and contact fields
-        if (req.query.search){
+        if (req.query.search) {
             let nameCriteria = {};
             nameCriteria['name'] = {
                 $regex: req.query.search,
                 $options: "i"
             }
-            let studioNameCriteria ={};
+            let studioNameCriteria = {};
             studioNameCriteria['studio.name'] = {
                 $regex: req.query.search,
                 $options: "i"
@@ -236,11 +237,11 @@ async function main() {
                 $regex: req.query.search,
                 $options: "i"
             }
-            criteria = {$or : [nameCriteria, studioNameCriteria, instagramCriteria]}
+            criteria = { $or: [nameCriteria, studioNameCriteria, instagramCriteria] }
         };
 
         //gender
-        if (req.query.gender && req.query.gender.length !=0 ) {
+        if (req.query.gender && req.query.gender.length != 0) {
             let genderQuery = [];
             if (!req.query.gender.includes(',')) {
                 genderQuery = [req.query.gender]
@@ -263,7 +264,7 @@ async function main() {
 
         //check if an array contains the value?
         //method
-        if (req.query.method && req.query.method.length !=0 ) {
+        if (req.query.method && req.query.method.length != 0) {
             let methodQuery = [];
             if (!req.query.method.includes(',')) {
                 methodQuery = [req.query.method]
@@ -286,18 +287,34 @@ async function main() {
             }
         }
 
+        //if do get route -> don't use comma to delimit -> put &% etc
+        //axios can send back array in front end 
+        // console.log(req)
         //style
-        if (req.query.style) {
-            let styleQuery = [];
-            if (!req.query.style.includes(',')) {
-                styleQuery = [req.query.style]
-            }
-            else {
-                styleQuery = req.query.style.split(',')
-            }
+
+        //try to parse using json
+        console.log(req.query.style)
+        //will not check length if req.query.style => optional screening => will avoid the undefined 
+        if (req.query.style?.length) {
             criteria['style'] = {
-                $in: styleQuery
+                $in: req.query.style
             }
+
+            // if (!req.query.style.includes('},')) {
+            //     styleQuery = [req.query.style]
+            // }
+
+            // let queryStyles = req.query.style.split(',');
+            // criteria['style.value'] = {
+            //     $in: req.query.style.map(value => value.value)
+            //map out value from req.query.style
+
+            //     if (req.query.style.length >1){
+            //     let styleQuery = req.query.style.split(',')
+            //     criteria['style'] = {
+            //         $in: styleQuery
+            //     }
+            // }
         }
 
         //ink
@@ -347,16 +364,16 @@ async function main() {
 
         //elemMatch only for things embedded within an array?
         //validation for query required?
-        if (req.query.instagram) {
-            criteria['contact.instagram'] = {
-                $regex: req.query.instagram,
-                $options: "i"
-            }
-        }
+        // if (req.query.instagram) {
+        //     criteria['contact.instagram'] = {
+        //         $regex: req.query.instagram,
+        //         $options: "i"
+        //     }
+        // }
 
-        if (req.query.phone) {
-            criteria['contact.phone'] = req.query.phone
-        }
+        // if (req.query.phone) {
+        //     criteria['contact.phone'] = req.query.phone
+        // }
 
         console.log(criteria);
         let results = await db.collection('tattoo_artists').find(criteria,
@@ -400,6 +417,7 @@ async function main() {
         let unit = req.body.unit;
         let postal = req.body.postal;
         let otherServices = req.body.otherServices;
+        let styleValues = style.map(value => value.value);
         let studio = {
             name: studioName.toLowerCase(),
             private: private,
@@ -521,7 +539,7 @@ async function main() {
                             apprentice: apprentice,
                             method: returnArray(method),
                             temporary: temporary,
-                            style: returnArray(style),
+                            style: styleValues,
                             studio: studio,
                             ink: returnArray(ink),
                             contact: contact,
@@ -540,6 +558,7 @@ async function main() {
 
     //DELETE MAIN
     app.delete('/tattoo-artist/:id', async function (req, res) {
+        // can send by post route instead to check email
         let email = req.body.email;
         console.log(req.body)
         let recordToDelete = await db.collection('tattoo_artists').findOne({
