@@ -254,6 +254,36 @@ async function main() {
             }
         }
 
+        // apprentice
+        if (req.query.apprentice && req.query.apprentice.length != 0) {
+            let apprenticeQuery = [];
+            if (!req.query.apprentice.includes(',')) {
+                apprenticeQuery = [req.query.apprentice]
+            }
+            else {
+                apprenticeQuery = req.query.apprentice.split(',');
+            }
+
+            criteria['apprentice'] = {
+                $in: apprenticeQuery
+            }
+        }
+
+        // temporary
+        if (req.query.temporary && req.query.temporary.length != 0) {
+            let temporaryQuery = [];
+            if (!req.query.temporary.includes(',')) {
+                temporaryQuery = [req.query.temporary]
+            }
+            else {
+                temporaryQuery = req.query.temporary.split(',');
+            }
+
+            criteria['temporary'] = {
+                $in: temporaryQuery
+            }
+        }
+
         //have to change
         //years of experience -> have to filter by min years
         if (req.query.yearsOfExperience) {
@@ -278,14 +308,87 @@ async function main() {
             }
             // change to $all if only want machine, machine&handpoke, handpoke
         }
-
-        //temporary
-        if (req.query.temporary) {
-            criteria['temporary'] = {
-                $regex: req.query.temporary,
-                $options: "i"
+        // style 
+        if (req.query.style?.length) {
+            criteria['style'] = {
+                $in: req.query.style
             }
         }
+
+        // ink
+        if (req.query.ink) {
+            let inkQuery = [];
+            if (!req.query.ink.includes(',')) {
+                inkQuery = [req.query.ink]
+            }
+            else {
+                inkQuery = req.query.ink.split(',')
+            }
+            criteria['ink'] = {
+                $in: inkQuery //have to convert before putting in 
+            }
+        }
+
+        //private
+        if (req.query.private && req.query.private.length != 0) {
+            let privateQuery = [];
+            if (!req.query.private.includes(',')) {
+                privateQuery = [req.query.private]
+            }
+            else {
+                privateQuery = req.query.private.split(',');
+            }
+
+            criteria['studio.private'] = {
+                $in: privateQuery
+            }
+        }
+        //bookings
+        if (req.query.bookings && req.query.bookings.length != 0) {
+            let bookingsQuery = [];
+            if (!req.query.bookings.includes(',')) {
+                bookingsQuery = [req.query.bookings]
+            }
+            else {
+                bookingsQuery = req.query.bookings.split(',');
+            }
+
+            criteria['studio.bookingsRequired'] = {
+                $in: bookingsQuery
+            }
+        }
+
+        //other services
+        if (req.query.otherServices && req.query.otherServices.length != 0) {
+            let otherServicesQuery = [];
+            if (!req.query.otherServices.includes(',')) {
+                otherServicesQuery = [req.query.otherServices]
+            }
+            else {
+                otherServicesQuery = req.query.otherServices.split(',');
+            }
+
+            if (otherServicesQuery.length == 1 && otherServicesQuery.includes('no')){
+            otherServicesQuery[otherServicesQuery.indexOf('no')] = 'nil';
+            criteria['studio.otherServices']= {
+                $in: otherServicesQuery
+            }
+            }
+
+            else if (otherServicesQuery.length == 1 && !otherServicesQuery.includes('no')){
+                criteria['studio.otherServices'] = {
+                    $ne: 'nil'
+                }
+            }
+        }
+
+        //temporary
+        // if (req.query.temporary) {
+        //     criteria['temporary'] = {
+        //         $regex: req.query.temporary,
+        //         $options: "i"
+        //     }
+        // }
 
         //if do get route -> don't use comma to delimit -> put &% etc
         //axios can send back array in front end 
@@ -293,12 +396,12 @@ async function main() {
         //style
 
         //try to parse using json
-        console.log(req.query.style)
-        //will not check length if req.query.style => optional screening => will avoid the undefined 
-        if (req.query.style?.length) {
-            criteria['style'] = {
-                $in: req.query.style
-            }
+        // console.log(req.query.style)
+        // //will not check length if req.query.style => optional screening => will avoid the undefined 
+        // if (req.query.style?.length) {
+        //     criteria['style'] = {
+        //         $in: req.query.style
+        //     }
 
             // if (!req.query.style.includes('},')) {
             //     styleQuery = [req.query.style]
@@ -315,49 +418,37 @@ async function main() {
             //         $in: styleQuery
             //     }
             // }
-        }
+        // }
 
-        //ink
-        if (req.query.ink) {
-            let inkQuery = [];
-            if (!req.query.ink.includes(',')) {
-                inkQuery = [req.query.ink]
-            }
-            else {
-                inkQuery = req.query.ink.split(',')
-            }
-            criteria['ink'] = {
-                $all: inkQuery //have to convert before putting in 
-            }
-        }
+
 
         //private studio
-        if (req.query.privateStudio) {
-            criteria['studio.private'] = {
-                $regex: req.query.privateStudio,
-                $options: "i"
-                // private: {
-                //     $regex: req.query.privateStudio,
-                //     $options: "i"
-                // }
-            }
-        }
+        // if (req.query.privateStudio) {
+        //     criteria['studio.private'] = {
+        //         $regex: req.query.privateStudio,
+        //         $options: "i"
+        //         // private: {
+        //         //     $regex: req.query.privateStudio,
+        //         //     $options: "i"
+        //         // }
+        //     }
+        // }
 
         //studio bookings required
-        if (req.query.bookingsRequired) {
-            criteria['studio.bookingsRequired'] = {
-                $regex: req.query.bookingsRequired,
-                $options: "i"
-            }
-        }
+        // if (req.query.bookingsRequired) {
+        //     criteria['studio.bookingsRequired'] = {
+        //         $regex: req.query.bookingsRequired,
+        //         $options: "i"
+        //     }
+        // }
 
         //studio other services
-        if (req.query.otherServices) {
-            criteria['studio.otherServices'] = {
-                $regex: req.query.otherServices,
-                $options: "i"
-            }
-        }
+        // if (req.query.otherServices) {
+        //     criteria['studio.otherServices'] = {
+        //         $regex: req.query.otherServices,
+        //         $options: "i"
+        //     }
+        // }
 
         //reviews ratings
 
@@ -559,8 +650,8 @@ async function main() {
     //DELETE MAIN
     app.delete('/tattoo-artist/:id', async function (req, res) {
         // can send by post route instead to check email
-        let email = req.body.email;
-        console.log(req.body)
+        let email = req.query.email;
+        console.log(req.quert)
         let recordToDelete = await db.collection('tattoo_artists').findOne({
             _id: ObjectId(req.params.id)
         })
