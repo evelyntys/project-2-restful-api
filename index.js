@@ -219,8 +219,23 @@ async function main() {
         //have to change
         //years of experience -> have to filter by min years
         if (req.query.yearsOfExperience) {
-            criteria['yearsOfExperience'] = {
-                $gt: parseInt(req.query.yearsOfExperience)
+            let yearsQuery = CheckIfArray.queryArray(req.query.yearsOfExperience);
+            yearsQueryInt = yearsQuery.map(each => parseInt(each));
+            console.log(yearsQueryInt)
+            if (yearsQueryInt.length == 1) {
+                criteria['yearsOfExperience'] = {
+                    $gte: yearsQueryInt[0]
+                }
+            }
+            else if(yearsQueryInt.length == 2 && !yearsQueryInt.includes(1)){
+                criteria['yearsOfExperience'] = {
+                    $gte: 3
+                }
+            }
+            else {
+                criteria['yearsOfExperience'] = {
+                    $gte: 1
+                }
             }
         }
 
