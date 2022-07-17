@@ -4,22 +4,13 @@ require('dotenv').config();
 const ObjectId = require('mongodb').ObjectId;
 const MongoUtil = require('./MongoUtil');
 const MONGOURI = process.env.MONGO_URI;
+const CheckIfArray = require('./CheckIfArray');
+const Validation = require('./Validation')
 
 let app = express();
 
 app.use(express.json());
 app.use(cors());
-
-function returnArray(field) {
-    let result = [];
-    if (Array.isArray(field)) {
-        result = field
-    }
-    else if (!Array.isArray(field)) {
-        result = [field]
-    }
-    return result
-}
 
 async function main() {
     let db = await MongoUtil.connect(MONGOURI, 'tattoo_API');
@@ -53,14 +44,12 @@ async function main() {
                 postal: postal
             },
             bookingsRequired: bookingsRequired,
-            otherServices: returnArray(otherServices)
+            otherServices: CheckIfArray.returnArray(otherServices)
         };
         let ownerName = req.body.ownerName.toLowerCase();
         let ownerEmail = req.body.ownerEmail.toLowerCase();
-        // let ownerName = req.body.owner.name.toLowerCase();
-        // let ownerEmail = req.body.owner.email.toLowerCase();
         let styleValues = style.map(value => value.value);
-
+        // console.log(studio)
         //must send body over -> owner name
 
         //or comparator => empty string => if react didnt send anything then will create empty string instead
@@ -73,30 +62,10 @@ async function main() {
             'address.postal': postal
         })
 
-        let validateStudio = "";
-
-        if (!studioName) {
-            validateStudio += "please enter your studio name \n"
-        }
-
-        if (!street) {
-            validateStudio += "please enter the street name \n"
-        }
-
-        if (!unit) {
-            validateStudio += "please enter the unit \n"
-        }
-
-        if (!postal || postal.length != 6 || parseInt(postal) == NaN) {
-            validateStudio += "please enter a valid postal code\n"
-        }
-
-        if (!otherServices) {
-            validateStudio += "please enter nil if no other services \n"
-        }
+        let validateStudioMsg = Validation.validateStudio(studioName, street, unit, postal, otherServices);
 
         if (matchingStudio != null) {
-            if (validateStudio == "") {
+            if (validateStudioMsg.length == 0) {
                 let updated = await db.collection('studio_data').updateOne({
                     _id: ObjectId(matchingStudio._id)
                 },
@@ -110,18 +79,19 @@ async function main() {
                                 postal: postal
                             },
                             bookingsRequired: bookingsRequired,
-                            otherServices: returnArray(otherServices)
+                            otherServices: CheckIfArray.returnArray(otherServices)
                         }
                     })
+                res.status(200);
+                res.json({ message: 'studio successfully updated' })
             } else {
                 res.status(400);
-                res.send(validateStudio)
+                res.json({ message: validateStudioMsg })
             }
         }
 
-
         else {
-            if (validateStudio == "") {
+            if (validateStudioMsg.length == 0) {
                 let insertSuccess = await db.collection('studio_data').insertOne({
                     name: studioName.toLowerCase(),
                     private: private,
@@ -131,11 +101,15 @@ async function main() {
                         postal: postal
                     },
                     bookingsRequired: bookingsRequired,
-                    otherServices: returnArray(otherServices)
+                    otherServices: CheckIfArray.returnArray(otherServices)
+                })
+                res.status(200);
+                res.json({
+                    message: 'studio succesfully added'
                 })
             } else {
                 res.status(400)
-                res.send(validateStudio)
+                res.json({ message: validateStudioMsg })
             }
         }
 
@@ -147,57 +121,33 @@ async function main() {
 
         studio = studioToInsert;
 
-        let validateArtist = "";
-        if (!name || name.length < 3) {
-            validateArtist += 'please ensure that your name contains 3 or more characters \n'
-        }
-
-        if (!yearStarted || yearStarted == NaN) {
-            validateArtist += 'please ensure that you enter a valid year \n'
-        }
-
-        if (method == [] || method.length == 0) {
-            validateArtist += 'please ensure that you select at least one method \n'
-        }
-
-        if (style == [] || !style || style.length > 3 || style == null) {
-            validateArtist += 'please ensure that you select at least one and at most 3 styles \n'
-        }
-
-        if (ink == []) {
-            validateArtist += 'please ensure that you select at least one type of ink \n'
-        }
-
-        //to do front-end validation for key/value
-        if (Object.keys(contact).length == 0 || !contact) {
-            validateArtist += 'please enter at least one form of contact'
-        }
-
-        if (!image) {
-            validateArtist += 'please provide at least one image'
-        }
+        let validateArtistMsg = Validation.validateArtist(name, yearStarted, method, style, ink, contact, image);
 
         //validating owner
-        if (!ownerName || ownerName.length < 3) {
-            validateArtist += 'please ensure that your name contains 3 or more characters \n'
+        if (!ownerName || ownerName.length < 2) {
+            validateArtistMsg.push({
+                ownerName: 'please ensure that your name contains 2 or more characters'
+            })
         }
 
         if (!ownerEmail || !ownerEmail.includes('@') || !ownerEmail.includes('.com')) {
-            validateArtist += 'please ensure that you enter a valid email \n'
+            validateArtistMsg.push({
+                ownerEmail: 'please ensure that you enter a valid email'
+            })
         }
 
-        if (validateStudio == "") {
-            if (validateArtist == "") {
+        if (validateStudioMsg.length == 0) {
+            if (validateArtistMsg.length == 0) {
                 let result = await db.collection('tattoo_artists').insertOne({
                     name: name,
                     gender: gender,
                     yearStarted: yearStarted,
                     yearsOfExperience: (currentYear - yearStarted),
                     apprentice: apprentice,
-                    method: returnArray(method),
+                    method: CheckIfArray.returnArray(method),
                     temporary: temporary,
                     style: styleValues,
-                    ink: returnArray(ink),
+                    ink: CheckIfArray.returnArray(ink),
                     contact: contact,
                     image: image,
                     studio: studio,
@@ -211,7 +161,7 @@ async function main() {
             }
             else {
                 res.status(400)
-                res.send(validateArtist)
+                res.json({ message: validateArtistMsg })
             }
         }
     })
@@ -242,13 +192,7 @@ async function main() {
 
         //gender
         if (req.query.gender && req.query.gender.length != 0) {
-            let genderQuery = [];
-            if (!req.query.gender.includes(',')) {
-                genderQuery = [req.query.gender]
-            }
-            else {
-                genderQuery = req.query.gender.split(',')
-            }
+            let genderQuery = CheckIfArray.queryArray(req.query.gender);
             criteria['gender'] = {
                 $in: genderQuery
             }
@@ -256,13 +200,7 @@ async function main() {
 
         // apprentice
         if (req.query.apprentice && req.query.apprentice.length != 0) {
-            let apprenticeQuery = [];
-            if (!req.query.apprentice.includes(',')) {
-                apprenticeQuery = [req.query.apprentice]
-            }
-            else {
-                apprenticeQuery = req.query.apprentice.split(',');
-            }
+            let apprenticeQuery = CheckIfArray.queryArray(req.query.apprentice);
 
             criteria['apprentice'] = {
                 $in: apprenticeQuery
@@ -271,13 +209,7 @@ async function main() {
 
         // temporary
         if (req.query.temporary && req.query.temporary.length != 0) {
-            let temporaryQuery = [];
-            if (!req.query.temporary.includes(',')) {
-                temporaryQuery = [req.query.temporary]
-            }
-            else {
-                temporaryQuery = req.query.temporary.split(',');
-            }
+            let temporaryQuery = CheckIfArray.queryArray(req.query.temporary);
 
             criteria['temporary'] = {
                 $in: temporaryQuery
@@ -292,20 +224,14 @@ async function main() {
             }
         }
 
-        //check if an array contains the value?
         //method
         if (req.query.method && req.query.method.length != 0) {
-            let methodQuery = [];
-            if (!req.query.method.includes(',')) {
-                methodQuery = [req.query.method]
-            }
-            else {
-                methodQuery = req.query.method.split(',');
-            }
+            let methodQuery = CheckIfArray.queryArray(req.query.method)
 
             criteria['method'] = {
                 $in: methodQuery
             }
+            console.log(methodQuery)
             // change to $all if only want machine, machine&handpoke, handpoke
         }
         // style 
@@ -317,13 +243,7 @@ async function main() {
 
         // ink
         if (req.query.ink) {
-            let inkQuery = [];
-            if (!req.query.ink.includes(',')) {
-                inkQuery = [req.query.ink]
-            }
-            else {
-                inkQuery = req.query.ink.split(',')
-            }
+            let inkQuery = CheckIfArray.queryArray(req.query.ink);
             criteria['ink'] = {
                 $in: inkQuery //have to convert before putting in 
             }
@@ -331,13 +251,7 @@ async function main() {
 
         //private
         if (req.query.private && req.query.private.length != 0) {
-            let privateQuery = [];
-            if (!req.query.private.includes(',')) {
-                privateQuery = [req.query.private]
-            }
-            else {
-                privateQuery = req.query.private.split(',');
-            }
+            let privateQuery = CheckIfArray.queryArray(req.query.private);
 
             criteria['studio.private'] = {
                 $in: privateQuery
@@ -345,13 +259,7 @@ async function main() {
         }
         //bookings
         if (req.query.bookings && req.query.bookings.length != 0) {
-            let bookingsQuery = [];
-            if (!req.query.bookings.includes(',')) {
-                bookingsQuery = [req.query.bookings]
-            }
-            else {
-                bookingsQuery = req.query.bookings.split(',');
-            }
+            let bookingsQuery = CheckIfArray.queryArray(req.query.bookings)
 
             criteria['studio.bookingsRequired'] = {
                 $in: bookingsQuery
@@ -360,113 +268,23 @@ async function main() {
 
         //other services
         if (req.query.otherServices && req.query.otherServices.length != 0) {
-            let otherServicesQuery = [];
-            if (!req.query.otherServices.includes(',')) {
-                otherServicesQuery = [req.query.otherServices]
-            }
-            else {
-                otherServicesQuery = req.query.otherServices.split(',');
+            let otherServicesQuery = CheckIfArray.queryArray(req.query.otherServices);
+
+            if (otherServicesQuery.length == 1 && otherServicesQuery.includes('no')) {
+                otherServicesQuery[otherServicesQuery.indexOf('no')] = 'nil';
+                criteria['studio.otherServices'] = {
+                    $in: otherServicesQuery
+                }
             }
 
-            if (otherServicesQuery.length == 1 && otherServicesQuery.includes('no')){
-            otherServicesQuery[otherServicesQuery.indexOf('no')] = 'nil';
-            criteria['studio.otherServices']= {
-                $in: otherServicesQuery
-            }
-            }
-
-            else if (otherServicesQuery.length == 1 && !otherServicesQuery.includes('no')){
+            else if (otherServicesQuery.length == 1 && !otherServicesQuery.includes('no')) {
                 criteria['studio.otherServices'] = {
                     $ne: 'nil'
                 }
             }
         }
 
-        //temporary
-        // if (req.query.temporary) {
-        //     criteria['temporary'] = {
-        //         $regex: req.query.temporary,
-        //         $options: "i"
-        //     }
-        // }
-
-        //if do get route -> don't use comma to delimit -> put &% etc
-        //axios can send back array in front end 
-        // console.log(req)
-        //style
-
-        //try to parse using json
-        // console.log(req.query.style)
-        // //will not check length if req.query.style => optional screening => will avoid the undefined 
-        // if (req.query.style?.length) {
-        //     criteria['style'] = {
-        //         $in: req.query.style
-        //     }
-
-            // if (!req.query.style.includes('},')) {
-            //     styleQuery = [req.query.style]
-            // }
-
-            // let queryStyles = req.query.style.split(',');
-            // criteria['style.value'] = {
-            //     $in: req.query.style.map(value => value.value)
-            //map out value from req.query.style
-
-            //     if (req.query.style.length >1){
-            //     let styleQuery = req.query.style.split(',')
-            //     criteria['style'] = {
-            //         $in: styleQuery
-            //     }
-            // }
-        // }
-
-
-
-        //private studio
-        // if (req.query.privateStudio) {
-        //     criteria['studio.private'] = {
-        //         $regex: req.query.privateStudio,
-        //         $options: "i"
-        //         // private: {
-        //         //     $regex: req.query.privateStudio,
-        //         //     $options: "i"
-        //         // }
-        //     }
-        // }
-
-        //studio bookings required
-        // if (req.query.bookingsRequired) {
-        //     criteria['studio.bookingsRequired'] = {
-        //         $regex: req.query.bookingsRequired,
-        //         $options: "i"
-        //     }
-        // }
-
-        //studio other services
-        // if (req.query.otherServices) {
-        //     criteria['studio.otherServices'] = {
-        //         $regex: req.query.otherServices,
-        //         $options: "i"
-        //     }
-        // }
-
-        //reviews ratings
-
-
-        //elemMatch only for things embedded within an array?
-        //validation for query required?
-        // if (req.query.instagram) {
-        //     criteria['contact.instagram'] = {
-        //         $regex: req.query.instagram,
-        //         $options: "i"
-        //     }
-        // }
-
-        // if (req.query.phone) {
-        //     criteria['contact.phone'] = req.query.phone
-        // }
-
-        console.log(criteria);
+        // console.log(criteria);
         let results = await db.collection('tattoo_artists').find(criteria,
             // {
             //     projection: {
@@ -518,7 +336,7 @@ async function main() {
                 postal: postal
             },
             bookingsRequired: bookingsRequired,
-            otherServices: returnArray(otherServices)
+            otherServices: CheckIfArray.returnArray(otherServices)
         };
         let artist = await db.collection('tattoo_artists').findOne({
             _id: ObjectId(req.params.id),
@@ -529,36 +347,16 @@ async function main() {
         //find the original studio document
         //update
 
-        let validateStudio = "";
+        let validateStudioMsg = Validation.validateStudio(studioName, street, unit, postal, otherServices)
 
         if (ownerEmail != artist.owner.email) {
             res.status(401)
-            res.send('sorry, it seems that you are not the owner of this document!')
+            res.json({ message: 'sorry, it seems that you are not the owner of this document!' })
         }
 
         else {
 
-            if (!studio.name) {
-                validateStudio += "please enter your studio name \n"
-            }
-
-            if (!studio.address.street) {
-                validateStudio += "please enter the street name \n"
-            }
-
-            if (!studio.address.unit) {
-                validateStudio += "please enter the unit \n"
-            }
-
-            if (!studio.address.postal || studio.address.postal.length != 6 || parseInt(studio.address.postal) == NaN) {
-                validateStudio += "please enter a valid postal code \n"
-            }
-
-            if (!studio.otherServices) {
-                validateStudio += "please enter nil if no other services \n"
-            }
-
-            if (validateStudio == "") {
+            if (validateStudioMsg.length == 0) {
                 let updated = await db.collection('studio_data').updateOne({
                     _id: ObjectId(originalStudioID)
                 },
@@ -572,13 +370,13 @@ async function main() {
                                 postal: postal
                             },
                             bookingsRequired: bookingsRequired,
-                            otherServices: returnArray(otherServices)
+                            otherServices: CheckIfArray.returnArray(otherServices)
                         }
                     })
 
             } else {
                 res.status(422);
-                res.send(validateStudio)
+                res.json({ message: validateStudioMsg })
             }
         }
 
@@ -586,38 +384,10 @@ async function main() {
             _id: ObjectId(originalStudioID)
         })
 
-        let validateArtist = "";
-        if (!name || name.length < 3) {
-            validateArtist += 'please ensure that your name contains 3 or more characters \n'
-        }
+        let validateArtistMsg = Validation.validateArtist(name, yearStarted, method, style, ink, contact, image);
 
-        if (!yearStarted || yearStarted == NaN) {
-            validateArtist += 'please ensure that you enter a valid year \n'
-        }
-
-        if (method == []) {
-            validateArtist += 'please ensure that you select at least one method \n'
-        }
-
-        if (style == [] || !style || style.length > 3 || style == null) {
-            validateArtist += 'please ensure that you select at least one and at most 3 styles \n'
-        }
-
-        if (ink == []) {
-            validateArtist += 'please ensure that you select at least one type of ink \n'
-        }
-
-        //to do front-end validation for key/value
-        if (contact.length == 0) {
-            validateArtist += 'please enter at least one form of contact'
-        }
-
-        if (!image) {
-            validateArtist += 'please provide at least one image'
-        }
-
-        if (validateStudio == "") {
-            if (validateArtist == "") {
+        if (validateStudioMsg.length == 0) {
+            if (validateArtistMsg.length == 0) {
                 let result = await db.collection('tattoo_artists').updateOne({
                     _id: ObjectId(req.params.id)
                 },
@@ -628,48 +398,45 @@ async function main() {
                             yearStarted: yearStarted,
                             yearsOfExperience: (currentYear - yearStarted),
                             apprentice: apprentice,
-                            method: returnArray(method),
+                            method: CheckIfArray.returnArray(method),
                             temporary: temporary,
                             style: styleValues,
                             studio: studio,
-                            ink: returnArray(ink),
+                            ink: CheckIfArray.returnArray(ink),
                             contact: contact,
                             image: image
                         }
                     });
                 res.status(200)
-                res.send('entry successfully updated')
+                res.json({ message: 'entry successfully updated' })
 
             } else {
                 res.status(422);
-                res.send(validateArtist);
+                res.send({ message: validateArtistMsg });
             }
         }
     })
 
     //DELETE MAIN
     app.delete('/tattoo-artist/:id', async function (req, res) {
-        // can send by post route instead to check email
         let email = req.query.email;
-        console.log(req.quert)
+
         let recordToDelete = await db.collection('tattoo_artists').findOne({
             _id: ObjectId(req.params.id)
         })
-        console.log(email)
-        console.log(recordToDelete)
-        console.log(recordToDelete.owner.email)
+
         if (email == recordToDelete.owner.email) {
             let results = await db.collection('tattoo_artists').deleteOne({
                 _id: ObjectId(req.params.id)
             });
             res.status(200);
-            res.send({
+            res.json({
                 message: 'entry successfully deleted'
             })
         }
         else {
             res.status(400)
-            res.send('sorry it seems that you are not the owner of this document!')
+            res.json({ message: 'sorry it seems that you are not the owner of this document!' })
         }
 
     })
@@ -684,21 +451,30 @@ async function main() {
         let rating = parseInt(req.body.rating);
         let comment = req.body.comment;
 
-        let validateReview = ""
-        if (!reviewer || reviewer.length < 3) {
-            validateReview += "please ensure that your name is at least 3 characters long \n"
-        }
-        if (!email || !email.includes('@') || !email.includes('.com')) {
-            validateReview += "please ensure that you enter a valid email \n"
-        }
-        if (!rating || rating == NaN) {
-            validateReview += "please select a rating \n"
-        }
-        if (!comment) {
-            validateReview += "please enter your review \n"
+        let validateReview = [];
+        if (!reviewer || reviewer.length < 2) {
+            validateReview.push({
+                reviewer: "please ensure that your name is at least 2 characters long"
+            })
         }
 
-        if (validateReview == "") {
+        if (!email || !email.includes('@') || !email.includes('.com')) {
+            validateReview.push({
+                email: "please ensure that you enter a valid email"
+            })
+        }
+        if (!rating || rating == NaN) {
+            validateReview.push({
+                rating: "please select a rating from 1-5"
+            })
+        }
+        if (!comment) {
+            validateReview.push({
+                comment: "please enter your review"
+            })
+        }
+
+        if (validateReview.length == 0) {
             let response = await db.collection('tattoo_artists').updateOne({
                 _id: ObjectId(artistID)
             }, {
@@ -717,7 +493,7 @@ async function main() {
         }
         else {
             res.status(422);
-            res.send(validateReview)
+            res.json({ message: validateReview })
         }
     })
 
@@ -768,21 +544,30 @@ async function main() {
         let rating = parseInt(req.body.rating);
         let comment = req.body.comment;
 
-        let validateReview = "";
+        let validateReview = [];
         if (email != result.reviews[0].email) {
-            validateReview += "sorry, it seems that you are not the owner of this review! \n"
+            validateReview.push({
+                email: "sorry, it seems that you are not the owner of this review!"
+            })
         }
-        if (!reviewer || reviewer.length < 3) {
-            validateReview += "please ensure that your name is at least 3 characters long \n"
+        if (!reviewer || reviewer.length < 2) {
+            validateReview.push({
+                reviewer: "please ensure that your name is at least 2 characters long"
+            })
         }
         if (!rating || rating == NaN) {
-            validateReview += "please select a rating \n"
+            validateReview.push({
+                rating: "please select a rating from 1-5"
+            })
         }
         if (!comment) {
-            validateReview += "please enter your review \n"
+            validateReview.push({
+                comment: "please enter your review"
+            }
+            )
         }
 
-        if (validateReview == "") {
+        if (validateReview.length == 0) {
             let updated = await db.collection('tattoo_artists').updateOne({
                 'reviews._id': ObjectId(req.params.reviewid)
             }, {
@@ -802,19 +587,35 @@ async function main() {
                     }
                 }
             })
+            res.status(200);
             res.send(updatedResult)
         }
         else {
             res.status(422);
-            res.send(validateReview)
+            res.json(validateReview)
         }
     })
 
     //DELETE REVIEW
     app.get('/reviews/:reviewid/delete', async function (req, res) {
+        let email = req.query.email.toLowerCase();
         let result = await db.collection('tattoo_artists').findOne({
-            'reviews._id': ObjectId(req.params.reviewid)
-        });
+            'reviews._id': ObjectId(req.params.reviewid),
+        },
+            {
+                projection: {
+                    'reviews': {
+                        $elemMatch: {
+                            _id: ObjectId(req.params.reviewid)
+                        }
+                    }
+                }
+            });
+        if (email != result.reviews[0].email) {
+            validateReview.push({
+                email: "sorry, it seems that you are not the owner of this review!"
+            })
+        }
         await db.collection('tattoo_artists').updateOne({
             _id: ObjectId(result._id)
         }, {
@@ -825,10 +626,10 @@ async function main() {
             }
         })
         res.status(200)
-        res.send('delete completed')
+        res.json({ message: 'review has been successfully deleted' })
     })
-
 }
+
 main();
 
 app.get('/', function (req, res) {
