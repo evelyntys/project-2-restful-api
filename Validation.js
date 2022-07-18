@@ -13,9 +13,9 @@ function validateStudio(studioName, street, unit, postal, services) {
         })
     }
 
-    if (!unit) {
+    if (!unit || !unit.includes('#') || !unit.includes('-')) {
         validateStudio.push({
-            unit: "please enter the unit"
+            unit: "please enter the unit and ensure that it includes a '#' and '-'"
         })
     }
 
