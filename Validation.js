@@ -71,6 +71,24 @@ function validateArtist(name, yearStarted, method, style, ink, contact, image) {
         })
     }
 
+    let instagram = contact.find((element) => {
+        return element.contactKey === 'instagram';
+    })
+    if (instagram) {
+        if (!instagram.contactValue.includes('@'))
+        validateArtist.push({
+            instagram: "please include the '@' on your instagram handle"
+        })
+        else{
+            null
+        }
+    }
+    else{
+        validateArtist.push({
+            instagram: "please ensure that you include your instagram"
+        })
+    }   
+
     if (!image) {
         validateArtist.push({
             image: 'please provide an image link'

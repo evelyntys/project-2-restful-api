@@ -83,7 +83,7 @@ async function main() {
                         }
                     })
                 res.status(200);
-                res.json({ message: 'studio successfully updated' })
+                // res.json({ message: 'studio successfully updated' })
             } else {
                 res.status(400);
                 res.json({ message: validateStudioMsg })
@@ -104,9 +104,9 @@ async function main() {
                     otherServices: CheckIfArray.returnArray(otherServices)
                 })
                 res.status(200);
-                res.json({
-                    message: 'studio succesfully added'
-                })
+                // res.json({
+                //     message: 'studio succesfully added'
+                // })
             } else {
                 res.status(400)
                 res.json({ message: validateStudioMsg })
