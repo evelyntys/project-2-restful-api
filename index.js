@@ -191,51 +191,53 @@ async function main() {
         };
 
         //gender
-        if (req.query.gender && req.query.gender.length != 0) {
-            let genderQuery = CheckIfArray.queryArray(req.query.gender);
-            criteria['gender'] = {
-                $in: genderQuery
+        if (req.query.gender) {
+            // let genderQuery = CheckIfArray.queryArray(req.query.gender);
+            if (req.query.gender != "any") {
+                criteria['gender'] = {
+                    $eq: req.query.gender
+                }
+            }
+            else {
+                criteria['gender'] = {
+                    $ne: req.query.gender
+                }
             }
         }
 
         // apprentice
-        if (req.query.apprentice && req.query.apprentice.length != 0) {
-            let apprenticeQuery = CheckIfArray.queryArray(req.query.apprentice);
-
-            criteria['apprentice'] = {
-                $in: apprenticeQuery
+        if (req.query.apprentice) {
+            if (req.query.apprentice != "any") {
+                criteria['apprentice'] = {
+                    $eq: req.query.apprentice
+                }
+            }
+            else {
+                criteria['apprentice'] = {
+                    $ne: req.query.apprentice
+                }
             }
         }
 
         // temporary
-        if (req.query.temporary && req.query.temporary.length != 0) {
-            let temporaryQuery = CheckIfArray.queryArray(req.query.temporary);
-
-            criteria['temporary'] = {
-                $in: temporaryQuery
+        if (req.query.temporary) {
+            if (req.query.temporary != "any") {
+                criteria['temporary'] = {
+                    $eq: req.query.temporary
+                }
+            }
+            else {
+                criteria['temporary'] = {
+                    $ne: req.query.temporary
+                }
             }
         }
 
         //have to change
         //years of experience -> have to filter by min years
         if (req.query.yearsOfExperience) {
-            let yearsQuery = CheckIfArray.queryArray(req.query.yearsOfExperience);
-            yearsQueryInt = yearsQuery.map(each => parseInt(each));
-            console.log(yearsQueryInt)
-            if (yearsQueryInt.length == 1) {
-                criteria['yearsOfExperience'] = {
-                    $gte: yearsQueryInt[0]
-                }
-            }
-            else if(yearsQueryInt.length == 2 && !yearsQueryInt.includes(1)){
-                criteria['yearsOfExperience'] = {
-                    $gte: 3
-                }
-            }
-            else {
-                criteria['yearsOfExperience'] = {
-                    $gte: 1
-                }
+            criteria['yearsOfExperience'] = {
+                $gte: parseInt(req.query.yearsOfExperience)
             }
         }
 
@@ -244,7 +246,7 @@ async function main() {
             let methodQuery = CheckIfArray.queryArray(req.query.method)
 
             criteria['method'] = {
-                $in: methodQuery
+                $all: methodQuery
             }
             console.log(methodQuery)
             // change to $all if only want machine, machine&handpoke, handpoke
@@ -252,32 +254,44 @@ async function main() {
         // style 
         if (req.query.style?.length) {
             criteria['style'] = {
-                $in: req.query.style
+                $all: req.query.style
             }
+            console.log(req.query.style)
         }
+
 
         // ink
         if (req.query.ink) {
             let inkQuery = CheckIfArray.queryArray(req.query.ink);
             criteria['ink'] = {
-                $in: inkQuery //have to convert before putting in 
+                $all: inkQuery //have to convert before putting in 
             }
         }
 
         //private
         if (req.query.private && req.query.private.length != 0) {
-            let privateQuery = CheckIfArray.queryArray(req.query.private);
-
-            criteria['studio.private'] = {
-                $in: privateQuery
+            if (req.query.private != "any") {
+                criteria['studio.private'] = {
+                    $eq: req.query.private
+                }
+            }
+            else {
+                criteria['studio.private'] = {
+                    $ne: req.query.private
+                }
             }
         }
         //bookings
         if (req.query.bookings && req.query.bookings.length != 0) {
-            let bookingsQuery = CheckIfArray.queryArray(req.query.bookings)
-
-            criteria['studio.bookingsRequired'] = {
-                $in: bookingsQuery
+            if (req.query.bookings != "any") {
+                criteria['studio.bookingsRequired'] = {
+                    $eq: req.query.bookings
+                }
+            }
+            else {
+                criteria['studio.bookingsRequired'] = {
+                    $ne: req.query.bookings
+                }
             }
         }
 
