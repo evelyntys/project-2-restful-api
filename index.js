@@ -653,10 +653,6 @@ app.get('/', function (req, res) {
     res.send("welcome to the tattoofindwho restful API")
 })
 
-app.listen(8888, function () {
+app.listen(process.env.PORT, function () {
     console.log('server started')
 })
-
-// app.listen(process.env.PORT, function () {
-//     console.log('server started')
-// })
