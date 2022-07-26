@@ -157,7 +157,7 @@ async function main() {
                     }
                 });
                 res.status(200)
-                res.send(result)
+                res.json({message: "your listing has been successfully"})
             }
             else {
                 res.status(400)
@@ -192,7 +192,6 @@ async function main() {
 
         //gender
         if (req.query.gender) {
-            // let genderQuery = CheckIfArray.queryArray(req.query.gender);
             if (req.query.gender != "any") {
                 criteria['gender'] = {
                     $eq: req.query.gender
@@ -233,8 +232,6 @@ async function main() {
             }
         }
 
-        //have to change
-        //years of experience -> have to filter by min years
         if (req.query.yearsOfExperience) {
             criteria['yearsOfExperience'] = {
                 $gte: parseInt(req.query.yearsOfExperience)
@@ -244,13 +241,14 @@ async function main() {
         //method
         if (req.query.method && req.query.method.length != 0) {
             let methodQuery = CheckIfArray.queryArray(req.query.method)
+            console.log(req.query.method)
 
             criteria['method'] = {
                 $all: methodQuery
             }
             console.log(methodQuery)
-            // change to $all if only want machine, machine&handpoke, handpoke
         }
+
         // style 
         if (req.query.style?.length) {
             criteria['style'] = {
@@ -264,7 +262,7 @@ async function main() {
         if (req.query.ink) {
             let inkQuery = CheckIfArray.queryArray(req.query.ink);
             criteria['ink'] = {
-                $all: inkQuery //have to convert before putting in 
+                $all: inkQuery 
             }
         }
 
@@ -313,13 +311,7 @@ async function main() {
             }
         }
 
-        // console.log(criteria);
         let results = await db.collection('tattoo_artists').find(criteria,
-            // {
-            //     projection: {
-            //         name: 1, yearsOfExperience: 1, gender: 1, method: 1, style: 1, ink: 1, contact: 1, studio: { private: 1, bookingsRequired: 1 }
-            //     }
-            // }
         ).toArray();
 
         res.status(200);
@@ -336,7 +328,7 @@ async function main() {
     })
 
     // UPDATE MAIN
-    app.put('/tattoo-artist/:id', async function (req, res) {
+    app.put('/tattoo-artist/:id/edit', async function (req, res) {
         let name = req.body.name.toLowerCase();
         let gender = req.body.gender;
         let yearStarted = parseInt(req.body.yearStarted);
@@ -371,10 +363,6 @@ async function main() {
             _id: ObjectId(req.params.id),
         });
         let originalStudioID = artist.studio['_id'];
-        console.log(postal)
-        //update studio data
-        //find the original studio document
-        //update
 
         let validateStudioMsg = Validation.validateStudio(studioName, street, unit, postal, otherServices)
 
@@ -447,7 +435,7 @@ async function main() {
     })
 
     //DELETE MAIN
-    app.delete('/tattoo-artist/:id', async function (req, res) {
+    app.delete('/tattoo-artist/:id/delete', async function (req, res) {
         let email = req.query.email;
 
         let recordToDelete = await db.collection('tattoo_artists').findOne({
@@ -527,7 +515,7 @@ async function main() {
     })
 
     //READ REVIEWS
-    app.get('/tattoo-artist/:id', async function (req, res) {
+    app.get('/tattoo-artist/:id/reviews', async function (req, res) {
         let artistID = req.params.id
         let artist = await db.collection('tattoo_artists').findOne({
             _id: ObjectId(artistID)
@@ -662,10 +650,13 @@ async function main() {
 main();
 
 app.get('/', function (req, res) {
-    res.send(`<img src='http://drive.google.com/uc?export=view&id=1t6xnQj0upRS_ErtEWeEZJWaqpM7x3RsG'/>`)
+    res.send("welcome to the tattoofindwho restful API")
 })
 
-
-app.listen(process.env.PORT, function () {
+app.listen(8888, function () {
     console.log('server started')
 })
+
+// app.listen(process.env.PORT, function () {
+//     console.log('server started')
+// })
