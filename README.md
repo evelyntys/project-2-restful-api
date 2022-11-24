@@ -65,7 +65,7 @@ Sample document:
  ## 2. Endpoints
 ``` 
 BASE API URL: 
-https://etys-tattoo-artists.herokuapp.com/ 
+https://tattoo-find-who-api.onrender.com/
 ```
  When successfully connected, it will display the message: 
 
